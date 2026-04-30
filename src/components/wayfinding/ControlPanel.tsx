@@ -6,7 +6,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { POIS, type Poi } from "./types";
+import { usePois } from "@/hooks/use-pois";
+import type { Poi } from "./types";
 import { Button } from "@/components/ui/button";
 import type { FavoriteRoute } from "@/hooks/use-favorites";
 
@@ -16,10 +17,11 @@ type Props = {
   onOriginChange: (id: string) => void;
   onDestinationChange: (id: string) => void;
   onSwap: () => void;
-  distance: number; // meters
-  duration: number; // seconds
+  onStart: () => void;
+  distance: number;
+  duration: number;
   loading: boolean;
-  progress: number; // 0..1 for the "calculation" bar
+  progress: number;
   favorites: FavoriteRoute[];
   isFavorite: boolean;
   onToggleFavorite: () => void;
@@ -33,6 +35,7 @@ export function ControlPanel({
   onOriginChange,
   onDestinationChange,
   onSwap,
+  onStart,
   distance,
   duration,
   loading,
@@ -43,6 +46,7 @@ export function ControlPanel({
   onSelectFavorite,
   onRemoveFavorite,
 }: Props) {
+  const { pois } = usePois();
   const eta = formatDuration(duration);
   const dist = `${distance.toFixed(1)} m`;
 
@@ -51,8 +55,10 @@ export function ControlPanel({
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <div className="relative h-9 w-9 rounded-xl grid place-items-center"
-               style={{ background: "linear-gradient(135deg, var(--primary), var(--primary-glow))" }}>
+          <div
+            className="relative h-9 w-9 rounded-xl grid place-items-center"
+            style={{ background: "linear-gradient(135deg, var(--primary), var(--primary-glow))" }}
+          >
             <Navigation className="h-4 w-4 text-primary-foreground" />
             <span className="absolute inset-0 rounded-xl animate-pulse-glow" />
           </div>
@@ -73,6 +79,7 @@ export function ControlPanel({
           label="Origem"
           icon={<span className="h-2.5 w-2.5 rounded-full bg-primary shadow-[0_0_10px_var(--primary)]" />}
           value={origin.id}
+          pois={pois}
           onChange={onOriginChange}
         />
         <div className="absolute right-3 top-1/2 -translate-y-1/2 z-10">
@@ -89,6 +96,7 @@ export function ControlPanel({
           label="Destino"
           icon={<MapPin className="h-3 w-3 text-accent" />}
           value={destination.id}
+          pois={pois}
           onChange={onDestinationChange}
         />
       </div>
@@ -121,8 +129,7 @@ export function ControlPanel({
               className="h-full rounded-full transition-[width] duration-300 ease-out"
               style={{
                 width: `${Math.round(progress * 100)}%`,
-                background:
-                  "linear-gradient(90deg, var(--primary), var(--primary-glow), var(--accent))",
+                background: "linear-gradient(90deg, var(--primary), var(--primary-glow), var(--accent))",
                 boxShadow: "0 0 12px oklch(0.78 0.18 250 / 0.6)",
               }}
             />
@@ -132,6 +139,7 @@ export function ControlPanel({
 
       <div className="mt-4 flex gap-2">
         <Button
+          onClick={onStart}
           className="flex-1 h-11 rounded-xl text-sm font-semibold border-0"
           style={{
             background: "linear-gradient(135deg, var(--primary), var(--primary-glow))",
@@ -166,7 +174,7 @@ export function ControlPanel({
             </p>
             <span className="text-[10px] text-muted-foreground tabular-nums">{favorites.length}/12</span>
           </div>
-          <div className="flex flex-wrap gap-1.5 max-h-[120px] overflow-y-auto pr-1">
+          <div className="flex flex-wrap gap-1.5 max-h-[120px] overflow-y-auto pr-1 scrollbar-none">
             {favorites.map((f) => (
               <div
                 key={f.id}
@@ -220,13 +228,18 @@ function PoiSelect({
   label,
   icon,
   value,
+  pois,
   onChange,
 }: {
   label: string;
   icon: React.ReactNode;
   value: string;
+  pois: Poi[];
   onChange: (v: string) => void;
 }) {
+  const selected = pois.find((x) => x.id === value);
+  const floors = [...new Set(pois.map((p) => p.floor))].sort((a, b) => a - b);
+
   return (
     <div className="rounded-xl border border-border bg-white/[0.03] hover:bg-white/[0.05] transition-colors">
       <div className="px-3 pt-2 pb-0 flex items-center gap-2 text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
@@ -235,27 +248,26 @@ function PoiSelect({
       </div>
       <Select value={value} onValueChange={onChange}>
         <SelectTrigger
-          className="!bg-transparent border-0 !h-11 pl-3 pr-12 text-sm font-medium focus:ring-0 focus:ring-offset-0 shadow-none"
+          aria-label={label}
+          className="bg-transparent border-0 h-11 pl-3 pr-12 text-sm font-medium focus:ring-0 focus:ring-offset-0 shadow-none"
         >
-          <SelectValue placeholder="Selecione…">
-            {(() => {
-              const p = POIS.find((x) => x.id === value);
-              if (!p) return "Selecione…";
-              return (
-                <span className="inline-flex items-center gap-2">
-                  <Dot type={p.type} />
-                  <span>{p.name}</span>
-                  <span className="text-[10px] text-muted-foreground tabular-nums">
-                    {p.floor}º andar
-                  </span>
+          <SelectValue>
+            {selected ? (
+              <span className="inline-flex items-center gap-2">
+                <Dot type={selected.type} />
+                <span>{selected.name}</span>
+                <span className="text-[10px] text-muted-foreground tabular-nums">
+                  {selected.floor}º andar
                 </span>
-              );
-            })()}
+              </span>
+            ) : (
+              "Selecione…"
+            )}
           </SelectValue>
         </SelectTrigger>
         <SelectContent className="glass-strong border-border max-h-[320px]">
-          {[1, 2, 3, 4, 5, 6].map((floor) => {
-            const items = POIS.filter((p) => p.floor === floor);
+          {floors.map((floor) => {
+            const items = pois.filter((p) => p.floor === floor);
             if (items.length === 0) return null;
             return (
               <div key={floor}>
@@ -293,7 +305,7 @@ function Dot({ type }: { type: Poi["type"] }) {
   };
   return (
     <span
-      className="h-2 w-2 rounded-full"
+      className="h-2 w-2 rounded-full shrink-0"
       style={{ background: color[type], boxShadow: `0 0 8px ${color[type]}` }}
     />
   );

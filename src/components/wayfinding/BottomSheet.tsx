@@ -38,7 +38,7 @@ export function BottomSheet({ children }: Props) {
     >
       <div className="glass-strong rounded-t-3xl border-b-0 px-4 pt-2 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-2xl">
         <div
-          className="mx-auto mb-2 flex h-6 w-full max-w-[120px] cursor-grab touch-none items-center justify-center active:cursor-grabbing"
+          className="mx-auto mb-3 flex h-6 w-full max-w-[120px] cursor-grab touch-none items-center justify-center active:cursor-grabbing"
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
@@ -47,7 +47,9 @@ export function BottomSheet({ children }: Props) {
         >
           <span className="h-1.5 w-12 rounded-full bg-white/30" />
         </div>
-        {children}
+        <div className="max-h-[55dvh] overflow-y-auto pb-2 scrollbar-none">
+          {children}
+        </div>
       </div>
     </div>
   );

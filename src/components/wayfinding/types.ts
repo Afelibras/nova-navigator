@@ -210,8 +210,8 @@ export function nearestElevator(p: Poi): Poi {
 // Corridor network — the route is constrained to these axes so the line never
 // crosses through rooms. Horizontal axes run east-west; the vertical axis splits
 // the building. A POI "exits" through the nearest corridor (its door).
-const CORRIDORS_H = [369, 609]; // y of main + bottom corridors (centers of grey strips)
-const CORRIDORS_V = [574];      // x of central vertical corridor
+export const CORRIDORS_H = [369, 609]; // y of main + bottom corridors (centers of grey strips)
+export const CORRIDORS_V = [574];      // x of central vertical corridor
 
 function nearest(value: number, options: number[]): number {
   return options.reduce((best, v) =>

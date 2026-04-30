@@ -6,7 +6,7 @@ import { BUILDING, poisOnFloor } from "./types";
 type Props = {
   origin: Poi;
   destination: Poi;
-  plan: RoutePlan;
+  plan: RoutePlan | null;
   loading: boolean;
   floor: number;
   onFloorChange: (floor: number) => void;
@@ -55,7 +55,7 @@ export function MapCanvas({
   }, [origin.id, destination.id, loading, floor]);
 
   const pois = useMemo(() => poisOnFloor(floor), [floor]);
-  const floorSegment = plan.segments.find((s) => s.floor === floor);
+  const floorSegment = plan?.segments.find((s) => s.floor === floor);
 
   function recenter() {
     setZoom(1);
@@ -78,7 +78,13 @@ export function MapCanvas({
 
   const showOrigin = origin.floor === floor;
   const showDest = destination.floor === floor;
-
+  if (!plan) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+      <p>Aguardando dados do mapa...</p>
+    </div>
+    );
+  }
   return (
     <div className="absolute inset-0 overflow-hidden grid-bg">
       {/* Ambient glow */}
@@ -309,22 +315,18 @@ export function MapCanvas({
         </div>
       )}
 
-      {/* Loading overlay */}
+      {/* Loading indicator — small badge, does not block map */}
       {loading && (
-        <div className="absolute inset-0 z-30 grid place-items-center bg-background/40 backdrop-blur-sm animate-fade-up">
-          <div className="glass-strong rounded-2xl px-6 py-5 flex items-center gap-4">
-            <div className="relative h-10 w-10">
+        <div className="absolute left-1/2 top-20 z-30 -translate-x-1/2 lg:top-6">
+          <div className="glass rounded-full px-4 py-2 flex items-center gap-3">
+            <div className="relative h-5 w-5">
               <div className="absolute inset-0 rounded-full border-2 border-primary/30" />
               <div
                 className="absolute inset-0 rounded-full border-2 border-transparent border-t-primary animate-spin"
                 style={{ animationDuration: "0.9s" }}
               />
-              <div className="absolute inset-2 rounded-full bg-primary/30 blur-md" />
             </div>
-            <div>
-              <p className="text-sm font-semibold">Calculando melhor rota…</p>
-              <p className="text-xs text-muted-foreground">Analisando corredores e elevadores</p>
-            </div>
+            <span className="text-xs font-medium">Calculando rota…</span>
           </div>
         </div>
       )}

@@ -12,7 +12,7 @@ import {
 import type { Poi, RoutePlan } from "./types";
 
 type Props = {
-  plan: RoutePlan;
+  plan: RoutePlan | null;
   origin: Poi;
   destination: Poi;
   loading: boolean;
@@ -144,6 +144,8 @@ export function buildSteps(plan: RoutePlan): Step[] {
 }
 
 export function RouteSteps({ plan, loading }: Props) {
+  if (!plan) return null;
+
   const steps = buildSteps(plan);
 
   return (
