@@ -156,7 +156,12 @@ function Index() {
       </div>
 
       {/* Mobile bottom sheet */}
-      <BottomSheet>{panel}</BottomSheet>
+      <BottomSheet>
+        <div className="space-y-3">
+          {panel}
+          <RouteSteps plan={plan} origin={origin} destination={destination} loading={loading} />
+        </div>
+      </BottomSheet>
     </main>
   );
 }
