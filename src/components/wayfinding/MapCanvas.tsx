@@ -101,10 +101,32 @@ export function MapCanvas({ origin, destination, pois, loading }: Props) {
             <rect x="80" y="380" width="380" height="240" rx="8" />
             <rect x="540" y="380" width="380" height="240" rx="8" />
           </g>
-          {/* Corridors hint */}
-          <g stroke="oklch(1 0 0 / 0.06)" strokeWidth="22" strokeLinecap="round">
-            <line x1="500" y1="60" x2="500" y2="640" />
-            <line x1="60" y1="350" x2="940" y2="350" />
+
+          {/* Corridors — base */}
+          <g>
+            {/* Horizontal corridors */}
+            <rect x="60" y="120" width="880" height="22" rx="4" fill="oklch(1 0 0 / 0.05)" />
+            <rect x="60" y="340" width="880" height="44" rx="6" fill="oklch(1 0 0 / 0.07)" />
+            <rect x="60" y="570" width="880" height="22" rx="4" fill="oklch(1 0 0 / 0.05)" />
+            {/* Vertical corridors */}
+            <rect x="490" y="60" width="44" height="600" rx="6" fill="oklch(1 0 0 / 0.07)" />
+            <rect x="60" y="60" width="22" height="600" rx="4" fill="oklch(1 0 0 / 0.04)" />
+          </g>
+          {/* Corridor center dashed guide lines */}
+          <g
+            stroke="oklch(0.78 0.18 250 / 0.25)"
+            strokeWidth="1"
+            strokeDasharray="6 8"
+            fill="none"
+          >
+            <line x1="60" y1="362" x2="940" y2="362" />
+            <line x1="512" y1="60" x2="512" y2="660" />
+          </g>
+
+          {/* Corridor labels */}
+          <g fontFamily="Inter, sans-serif" fontSize="9" fill="oklch(1 0 0 / 0.35)" fontWeight={600} letterSpacing="2">
+            <text x="70" y="357" textAnchor="start">CORREDOR PRINCIPAL</text>
+            <text x="520" y="75" textAnchor="start">EIXO N–S</text>
           </g>
 
           {/* POIs */}
@@ -112,28 +134,7 @@ export function MapCanvas({ origin, destination, pois, loading }: Props) {
             const isOrigin = p.id === origin.id;
             const isDest = p.id === destination.id;
             if (isOrigin || isDest) return null;
-            return (
-              <g key={p.id}>
-                <circle
-                  cx={p.x}
-                  cy={p.y}
-                  r={6}
-                  fill="oklch(1 0 0 / 0.35)"
-                  stroke="oklch(1 0 0 / 0.5)"
-                  strokeWidth="1"
-                />
-                <text
-                  x={p.x + 12}
-                  y={p.y + 4}
-                  fontSize="11"
-                  fill="oklch(1 0 0 / 0.55)"
-                  fontFamily="Inter, sans-serif"
-                  fontWeight={500}
-                >
-                  {p.name}
-                </text>
-              </g>
-            );
+            return <PoiMarker key={p.id} poi={p} />;
           })}
 
           {/* Route */}
