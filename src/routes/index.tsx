@@ -21,8 +21,8 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
-  const [originId, setOriginId] = useState("elev-a");
-  const [destinationId, setDestinationId] = useState("room-202");
+  const [originId, setOriginId] = useState("entrance");
+  const [destinationId, setDestinationId] = useState("r-1413");
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(1);
 
