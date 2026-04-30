@@ -198,7 +198,10 @@ function Dot({ type }: { type: Poi["type"] }) {
     stairs: "var(--primary-glow)",
     room: "var(--accent)",
     entrance: "var(--accent-glow)",
+    exit: "oklch(0.72 0.20 30)",
     restroom: "oklch(0.78 0.10 220)",
+    "restroom-female": "oklch(0.72 0.18 330)",
+    "restroom-male": "oklch(0.72 0.15 240)",
     cafe: "oklch(0.80 0.14 60)",
   };
   return (

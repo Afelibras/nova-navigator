@@ -67,17 +67,24 @@ export const POIS: Poi[] = [
 
   // Banheiros (referência da planta)
   { id: "wc-1210", name: "Banheiros — Setor 1210", type: "restroom", x: 555, y: 175 },
-  { id: "wc-fem", name: "Banheiro Feminino — 1415", type: "restroom", x: 600, y: 365 },
+  { id: "wc-fem", name: "Banheiro Feminino — 1415", type: "restroom-female", x: 600, y: 365 },
+  { id: "wc-mas", name: "Banheiro Masculino — 1414", type: "restroom-male", x: 555, y: 365 },
   { id: "wc-1512", name: "Banheiros — Setor 1512", type: "restroom", x: 600, y: 545 },
 
   // Elevadores
-  { id: "elev-1", name: "Elevador Norte", type: "elevator", x: 555, y: 95 },
-  { id: "elev-2", name: "Elevador Central", type: "elevator", x: 555, y: 360 },
-  { id: "elev-3", name: "Elevador Sul", type: "elevator", x: 555, y: 625 },
-  { id: "elev-w", name: "Elevador Oeste", type: "elevator", x: 90, y: 405 },
+  { id: "elev-1", name: "Elevador Norte", type: "elevator", x: 510, y: 95 },
+  { id: "elev-2", name: "Elevador Central", type: "elevator", x: 510, y: 360 },
+  { id: "elev-3", name: "Elevador Sul", type: "elevator", x: 510, y: 625 },
+  { id: "elev-w", name: "Elevador Oeste", type: "elevator", x: 90, y: 470 },
 
-  // Entrada
+  // Escadas
+  { id: "stairs-n", name: "Escada Norte", type: "stairs", x: 700, y: 365 },
+  { id: "stairs-s", name: "Escada Sul — Emergência", type: "stairs", x: 250, y: 470 },
+
+  // Entrada / Saídas
   { id: "entrance", name: "Entrada Principal", type: "entrance", x: 90, y: 660 },
+  { id: "exit-e", name: "Saída de Emergência Leste", type: "exit", x: 880, y: 470 },
+  { id: "exit-s", name: "Saída de Emergência Sul", type: "exit", x: 555, y: 670 },
 ];
 
 export function findPoi(id: string) {
