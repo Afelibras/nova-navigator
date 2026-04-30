@@ -7,7 +7,8 @@ export type PoiType =
   | "restroom"
   | "restroom-female"
   | "restroom-male"
-  | "cafe";
+  | "cafe"
+  | "water";
 
 export type Poi = {
   id: string;
@@ -15,7 +16,7 @@ export type Poi = {
   type: PoiType;
   /** Floor number 1..6 */
   floor: number;
-  /** Center coords on the canvas (0-1000 x 0-700) */
+  /** Center coords on the canvas (0-1000 x 0-1000) */
   x: number;
   y: number;
   /** Optional rect dimensions for room blocks */
@@ -30,91 +31,70 @@ export type Floor = (typeof FLOORS)[number];
 
 // --- Geometry helpers shared by all floors ---
 export const BUILDING = {
-  main: { x: 80, y: 70, w: 760, h: 580 },
-  annexTop: { x: 840, y: 90, w: 110, h: 230 },
-  annexBottom: { x: 840, y: 360, w: 110, h: 240 },
-  greenTop: { x: 870, y: 110, w: 70, h: 200 },
-  greenBottom: { x: 870, y: 380, w: 70, h: 200 },
-  innerGreens: [
-    { x: 290, y: 240, w: 270, h: 90 },
-    { x: 600, y: 240, w: 220, h: 90 },
-    { x: 290, y: 470, w: 280, h: 70 },
-    { x: 600, y: 470, w: 220, h: 70 },
-  ],
-  corridorsH: [
-    { x: 80, y: 350, w: 760, h: 38 },
-    { x: 80, y: 595, w: 760, h: 28 },
-  ],
-  corridorsV: [
-    { x: 555, y: 70, w: 38, h: 580 },
-  ],
+  main: { x: 0, y: 0, w: 1000, h: 1000 },
 };
 
 type RoomTemplate = { suffix: string; x: number; y: number; w: number; h: number };
 
+// Fileira Superior (1100 a 1110) — Alinhadas no topo. Y ~ 100.
 const TOP_ROW_LEFT: RoomTemplate[] = [
-  { suffix: "00", x: 115, y: 110, w: 50, h: 36 },
-  { suffix: "01", x: 170, y: 110, w: 50, h: 36 },
-  { suffix: "02", x: 225, y: 110, w: 50, h: 36 },
-  { suffix: "03", x: 280, y: 110, w: 50, h: 36 },
-  { suffix: "04", x: 322, y: 110, w: 28, h: 36 },
-  { suffix: "05", x: 352, y: 110, w: 28, h: 36 },
-  { suffix: "06", x: 415, y: 110, w: 95, h: 36 },
+  { suffix: "00", x: 180, y: 100, w: 50, h: 36 },
+  { suffix: "01", x: 240, y: 100, w: 50, h: 36 },
+  { suffix: "02", x: 300, y: 100, w: 50, h: 36 },
+  { suffix: "03", x: 360, y: 100, w: 50, h: 36 },
+  { suffix: "04", x: 420, y: 100, w: 50, h: 36 },
+  { suffix: "05", x: 480, y: 100, w: 50, h: 36 },
 ];
 
 const TOP_ROW_RIGHT: RoomTemplate[] = [
-  { suffix: "07", x: 612, y: 110, w: 48, h: 36 },
-  { suffix: "08", x: 662, y: 110, w: 38, h: 36 },
-  { suffix: "09", x: 705, y: 110, w: 48, h: 36 },
-  { suffix: "10", x: 760, y: 110, w: 48, h: 36 },
-  { suffix: "17", x: 815, y: 110, w: 38, h: 36 },
+  { suffix: "07", x: 650, y: 100, w: 48, h: 36 },
+  { suffix: "08", x: 710, y: 100, w: 48, h: 36 },
+  { suffix: "09", x: 770, y: 100, w: 48, h: 36 },
+  { suffix: "10", x: 830, y: 100, w: 48, h: 36 },
 ];
 
-const SECOND_ROW_LEFT: RoomTemplate[] = [
-  { suffix: "00", x: 110, y: 200, w: 40, h: 70 },
-  { suffix: "03", x: 195, y: 195, w: 50, h: 50 },
-  { suffix: "04", x: 250, y: 195, w: 50, h: 50 },
-  { suffix: "05", x: 305, y: 195, w: 50, h: 50 },
-  { suffix: "06", x: 360, y: 195, w: 50, h: 50 },
-  { suffix: "07", x: 440, y: 195, w: 110, h: 50 },
+// Bloco Centro-Esq Superior (1203 a 1207) — X=150 a 530, Y=250.
+const MID_ROW_TOP: RoomTemplate[] = [
+  { suffix: "03", x: 200, y: 250, w: 60, h: 50 },
+  { suffix: "04", x: 270, y: 250, w: 60, h: 50 },
+  { suffix: "05", x: 340, y: 250, w: 60, h: 50 },
+  { suffix: "06", x: 410, y: 250, w: 60, h: 50 },
+  { suffix: "07", x: 480, y: 250, w: 50, h: 50 },
 ];
 
-const SECOND_ROW_RIGHT: RoomTemplate[] = [
-  { suffix: "11", x: 615, y: 195, w: 50, h: 50 },
-  { suffix: "12", x: 670, y: 195, w: 50, h: 50 },
-  { suffix: "14", x: 740, y: 195, w: 50, h: 50 },
-  { suffix: "16", x: 815, y: 240, w: 38, h: 110 },
+// Bloco Centro-Esq Inferior (1400) — X=150 a 400, Y=600.
+const MID_ROW_BOTTOM_LEFT: RoomTemplate[] = [
+  { suffix: "00", x: 220, y: 600, w: 80, h: 56 },
+  { suffix: "04", x: 320, y: 600, w: 60, h: 56 },
 ];
 
-const MID_ROW: RoomTemplate[] = [
-  { suffix: "00", x: 290, y: 415, w: 130, h: 56 },
-  { suffix: "13", x: 700, y: 405, w: 110, h: 70 },
-  { suffix: "17", x: 760, y: 470, w: 100, h: 60 },
-  { suffix: "19", x: 820, y: 575, w: 50, h: 60 },
+// Bloco Centro-Drt Inferior (1413, 1417) — X=640 a 870, Y=525.
+const MID_ROW_BOTTOM_RIGHT: RoomTemplate[] = [
+  { suffix: "13", x: 750, y: 525, w: 80, h: 70 },
+  { suffix: "17", x: 850, y: 525, w: 40, h: 70 },
 ];
 
-const FIFTH_ROW_LEFT: RoomTemplate[] = [
-  { suffix: "00", x: 110, y: 460, w: 38, h: 70 },
-  { suffix: "04", x: 110, y: 575, w: 30, h: 56 },
-  { suffix: "05", x: 175, y: 575, w: 60, h: 38 },
-  { suffix: "06", x: 240, y: 575, w: 50, h: 38 },
-  { suffix: "07", x: 295, y: 575, w: 50, h: 38 },
-  { suffix: "08", x: 350, y: 575, w: 50, h: 38 },
-  { suffix: "10", x: 405, y: 575, w: 50, h: 38 },
-  { suffix: "11", x: 460, y: 575, w: 50, h: 38 },
+// Fileiras Inferiores (1504-1511) — Y=750.
+const LOW_ROW_LEFT: RoomTemplate[] = [
+  { suffix: "04", x: 200, y: 750, w: 50, h: 40 },
+  { suffix: "05", x: 270, y: 750, w: 50, h: 40 },
+  { suffix: "06", x: 340, y: 750, w: 50, h: 40 },
+  { suffix: "07", x: 410, y: 750, w: 50, h: 40 },
+  { suffix: "08", x: 480, y: 750, w: 50, h: 40 },
 ];
 
-const FIFTH_ROW_RIGHT: RoomTemplate[] = [
-  { suffix: "12", x: 615, y: 575, w: 30, h: 38 },
-  { suffix: "16", x: 695, y: 575, w: 60, h: 38 },
-  { suffix: "17", x: 760, y: 575, w: 50, h: 38 },
+// Fileira Fundo (1605-1608) — Y=900.
+const BOTTOM_ROW: RoomTemplate[] = [
+  { suffix: "05", x: 250, y: 900, w: 60, h: 40 },
+  { suffix: "06", x: 340, y: 900, w: 60, h: 40 },
+  { suffix: "07", x: 430, y: 900, w: 60, h: 40 },
+  { suffix: "08", x: 520, y: 900, w: 60, h: 40 },
 ];
 
-const SOUTH_ROW: RoomTemplate[] = [
-  { suffix: "04", x: 380, y: 640, w: 60, h: 32 },
-  { suffix: "05", x: 445, y: 640, w: 50, h: 32 },
-  { suffix: "06", x: 500, y: 640, w: 50, h: 32 },
-  { suffix: "07", x: 555, y: 640, w: 50, h: 32 },
+// Bloco Esquerdo (1200, 1500) — X=50.
+const LEFT_BLOCK: RoomTemplate[] = [
+  { suffix: "00", x: 50, y: 210, w: 40, h: 70 },
+  { suffix: "00", x: 50, y: 620, w: 40, h: 60 },
 ];
 
 function makeFloor(floor: number): Poi[] {
@@ -137,32 +117,48 @@ function makeFloor(floor: number): Poi[] {
   const rooms: Poi[] = [
     ...TOP_ROW_LEFT.map(mk("1")),
     ...TOP_ROW_RIGHT.map(mk("1")),
-    ...SECOND_ROW_LEFT.map(mk("2")),
-    ...SECOND_ROW_RIGHT.map(mk("2")),
-    ...MID_ROW.map(mk("4")),
-    ...FIFTH_ROW_LEFT.map(mk("5")),
-    ...FIFTH_ROW_RIGHT.map(mk("5")),
-    ...SOUTH_ROW.map(mk("6")),
+    ...MID_ROW_TOP.map(mk("2")),
+    ...MID_ROW_BOTTOM_LEFT.map(mk("4")),
+    ...MID_ROW_BOTTOM_RIGHT.map(mk("4")),
+    ...LOW_ROW_LEFT.map(mk("5")),
+    ...BOTTOM_ROW.map(mk("6")),
+    ...LEFT_BLOCK.map((r, i) => {
+       const num = i === 0 ? `${f}200` : `${f}500`;
+       return {
+         id: `r-${num}-f${f}`,
+         name: `Sala ${num}`,
+         short: num.slice(1),
+         type: "room",
+         floor: f,
+         x: r.x,
+         y: r.y,
+         w: r.w,
+         h: r.h,
+       };
+    }),
   ];
 
   const infra: Poi[] = [
-    { id: `elev-n-f${f}`, name: "Elevador Norte", type: "elevator", floor: f, x: 555, y: 200, w: 30, h: 60 },
-    { id: `elev-s-f${f}`, name: "Elevador Sul", type: "elevator", floor: f, x: 555, y: 720 - 100, w: 30, h: 50 },
-    { id: `elev-w-f${f}`, name: "Elevador Oeste", type: "elevator", floor: f, x: 95, y: 405, w: 24, h: 40 },
-    { id: `stairs-e-f${f}`, name: "Escada Leste", type: "stairs", floor: f, x: 700, y: 470, w: 28, h: 40 },
-    { id: `stairs-s-f${f}`, name: "Escada Sul — Emergência", type: "stairs", floor: f, x: 230, y: 700 - 60, w: 26, h: 36 },
-    { id: `wc-male-n-f${f}`, name: "Banheiro Masculino — Norte", type: "restroom-male", floor: f, x: 525, y: 200, w: 22, h: 40 },
-    { id: `wc-fem-c-f${f}`, name: "Banheiro Feminino — Central", type: "restroom-female", floor: f, x: 600, y: 470, w: 30, h: 40 },
-    { id: `wc-fem-s-f${f}`, name: "Banheiro Feminino — Sul", type: "restroom-female", floor: f, x: 660, y: 575, w: 28, h: 38 },
-    { id: `wc-male-w-f${f}`, name: "Banheiro Masculino — Oeste", type: "restroom-male", floor: f, x: 113, y: 380, w: 18, h: 24 },
+    { id: `elev-w-f${f}`, name: "Elevador Oeste", type: "elevator", floor: f, x: 80, y: 550, w: 30, h: 50 },
+    { id: `elev-c-f${f}`, name: "Elevador Central", type: "elevator", floor: f, x: 570, y: 550, w: 30, h: 50 },
+
+    { id: `stairs-1-f${f}`, name: "Escada NE", type: "stairs", floor: f, x: 620, y: 120, w: 28, h: 40 },
+    { id: `stairs-2-f${f}`, name: "Escada O", type: "stairs", floor: f, x: 80, y: 210, w: 26, h: 36 },
+    { id: `stairs-3-f${f}`, name: "Escada Centro", type: "stairs", floor: f, x: 620, y: 430, w: 28, h: 40 },
+    { id: `stairs-4-f${f}`, name: "Escada S", type: "stairs", floor: f, x: 620, y: 880, w: 26, h: 36 },
+
+    { id: `wc-male-n-f${f}`, name: "Banheiro Masculino N", type: "restroom-male", floor: f, x: 700, y: 250, w: 40, h: 40 },
+    { id: `wc-male-s-l-f${f}`, name: "Banheiro Masc S-O", type: "restroom-male", floor: f, x: 200, y: 880, w: 30, h: 30 },
+    { id: `wc-male-s-r-f${f}`, name: "Banheiro Masc S-L", type: "restroom-male", floor: f, x: 780, y: 880, w: 30, h: 30 },
+    { id: `wc-fem-s-f${f}`, name: "Banheiro Feminino", type: "restroom-female", floor: f, x: 700, y: 780, w: 40, h: 40 },
+
+    { id: `water-f${f}`, name: "Bebedouro", type: "cafe", floor: f, x: 620, y: 800, w: 24, h: 24 },
   ];
 
   if (f === 1) {
     infra.push(
-      { id: `entrance-f1`, name: "Entrada Principal", type: "entrance", floor: 1, x: 95, y: 660, w: 24, h: 30 },
-      { id: `exit-e-f1`, name: "Saída Leste", type: "exit", floor: 1, x: 870, y: 470, w: 24, h: 30 },
-      { id: `exit-s-f1`, name: "Saída Sul", type: "exit", floor: 1, x: 555, y: 685, w: 28, h: 14 },
-      { id: `cafe-f1`, name: "Café & Lounge", type: "cafe", floor: 1, x: 415, y: 470, w: 60, h: 60 },
+      { id: `entrance-f1`, name: "Entrada Principal", type: "entrance", floor: 1, x: 550, y: 50, w: 40, h: 20 },
+      { id: `exit-s-f1`, name: "Saída Sul", type: "exit", floor: 1, x: 400, y: 960, w: 40, h: 20 },
     );
   }
 
@@ -193,46 +189,20 @@ export function nearestElevator(p: Poi): Poi {
 }
 
 // --- A* Pathfinding on corridor grid ---
-// Grid cell size: each cell represents 10 canvas units
 const CELL = 10;
 const CANVAS_W = 1000;
-const CANVAS_H = 720;
+const CANVAS_H = 1000;
 const COLS = CANVAS_W / CELL;
 const ROWS = CANVAS_H / CELL;
 
 function buildObstacleGrid(pois: Poi[]): Uint8Array {
   const grid = new Uint8Array(COLS * ROWS);
-  // Mark all cells outside building as blocked
-  for (let r = 0; r < ROWS; r++) {
-    for (let c = 0; c < COLS; c++) {
-      const px = c * CELL + CELL / 2;
-      const py = r * CELL + CELL / 2;
-      const inMain = px >= BUILDING.main.x && px <= BUILDING.main.x + BUILDING.main.w &&
-                     py >= BUILDING.main.y && py <= BUILDING.main.y + BUILDING.main.h;
-      const inAnnex = (px >= BUILDING.annexTop.x && px <= BUILDING.annexTop.x + BUILDING.annexTop.w &&
-                       py >= BUILDING.annexTop.y && py <= BUILDING.annexTop.y + BUILDING.annexTop.h) ||
-                      (px >= BUILDING.annexBottom.x && px <= BUILDING.annexBottom.x + BUILDING.annexBottom.w &&
-                       py >= BUILDING.annexBottom.y && py <= BUILDING.annexBottom.y + BUILDING.annexBottom.h);
-      const inInnerGreen = BUILDING.innerGreens.some(g =>
-        px >= g.x && px <= g.x + g.w && py >= g.y && py <= g.y + g.h
-      );
-      const inGreenPad = (px >= BUILDING.greenTop.x && px <= BUILDING.greenTop.x + BUILDING.greenTop.w &&
-                          py >= BUILDING.greenTop.y && py <= BUILDING.greenTop.y + BUILDING.greenTop.h) ||
-                         (px >= BUILDING.greenBottom.x && px <= BUILDING.greenBottom.x + BUILDING.greenBottom.w &&
-                          py >= BUILDING.greenBottom.y && py <= BUILDING.greenBottom.y + BUILDING.greenBottom.h);
-      if (!inMain && !inAnnex) {
-        grid[r * COLS + c] = 1;
-      }
-      if (inInnerGreen || inGreenPad) {
-        grid[r * COLS + c] = 1;
-      }
-    }
-  }
+  
   // Mark room cells as blocked (with padding for walls)
   for (const p of pois) {
     if (p.type !== "room") continue;
-    const halfW = (p.w ?? 22) / 2 + 2;
-    const halfH = (p.h ?? 22) / 2 + 2;
+    const halfW = (p.w ?? 22) / 2 + 3;
+    const halfH = (p.h ?? 22) / 2 + 3;
     const x1 = Math.floor((p.x - halfW) / CELL);
     const y1 = Math.floor((p.y - halfH) / CELL);
     const x2 = Math.ceil((p.x + halfW) / CELL);
@@ -335,7 +305,6 @@ export function buildRoute(a: Poi, b: Poi): { x: number; y: number }[] {
   const path = astar(grid, sr, sc, er, ec);
   if (path) return gridToPoints(path);
 
-  // Fallback: direct line (should not happen with valid data)
   return [{ x: a.x, y: a.y }, { x: b.x, y: b.y }];
 }
 

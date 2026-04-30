@@ -14,24 +14,36 @@ type Props = {
 };
 
 const VIEW_W = 1000;
-const VIEW_H = 720;
+const VIEW_H = 1000;
 
-// --- Visual palette (matches the photo) ---
-const COLOR_FLOOR_BG = "oklch(0.22 0.04 260)";
-const COLOR_CORRIDOR = "oklch(0.30 0.02 260)";
-const COLOR_CORRIDOR_EDGE = "oklch(0.18 0.02 260)";
-const COLOR_ROOM = "oklch(0.55 0.10 220)"; // teal/blue rooms
+// --- Visual palette ---
+const COLOR_BG = "oklch(0.15 0.02 260)";
+const COLOR_FLOOR = "oklch(1 0 0 / 0.9)"; // White walkways
+const COLOR_CORRIDOR_STROKE = "oklch(0.8 0.02 260)";
+const COLOR_ROOM = "oklch(0.55 0.10 220)";
 const COLOR_ROOM_STROKE = "oklch(0.18 0.04 260)";
-const COLOR_GREEN = "oklch(0.45 0.10 175)"; // dark green courtyards
-const COLOR_ANNEX = "oklch(0.30 0.10 255)"; // navy east annex
-const COLOR_GREEN_PAD = "oklch(0.40 0.09 175)";
-const COLOR_ELEVATOR = "oklch(0.32 0.08 30)"; // brown
+const COLOR_GREEN = "oklch(0.45 0.10 175)";
+const COLOR_ELEVATOR = "oklch(0.32 0.08 30)";
 const COLOR_RESTROOM_M = "oklch(0.40 0.18 295)";
 const COLOR_RESTROOM_F = "oklch(0.45 0.18 330)";
 const COLOR_STAIRS = "oklch(0.50 0.12 260)";
 const COLOR_ENTRANCE = "oklch(0.55 0.18 165)";
 const COLOR_EXIT = "oklch(0.55 0.20 30)";
 const COLOR_CAFE = "oklch(0.55 0.14 60)";
+
+export function MapCanvas({
+  origin,
+  destination,
+  plan,
+  loading,
+  floor,
+  onFloorChange,
+  floors,
+}: Props) {
+  const [zoom, setZoom] = useState(1);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [routeVisible, setRouteVisible] = useState(false);
+  const dragRef = useRef<{ x: number; y: number; ox: number; oy: number } | null>(null);
 
 export function MapCanvas({
   origin,
@@ -133,108 +145,16 @@ export function MapCanvas({
             </pattern>
           </defs>
 
-          {/* Building shell */}
+          {/* Background and White Corridors */}
           <g>
-            {/* Main building floor texture */}
-            <rect
-              x={BUILDING.main.x}
-              y={BUILDING.main.y}
-              width={BUILDING.main.w}
-              height={BUILDING.main.h}
-              rx="6"
-              fill="url(#floor-tex)"
-              stroke="oklch(1 0 0 / 0.1)"
-              strokeWidth="2"
-            />
-
-            {/* East annex (navy) */}
-            <rect
-              x={BUILDING.annexTop.x}
-              y={BUILDING.annexTop.y}
-              width={BUILDING.annexTop.w}
-              height={BUILDING.annexTop.h}
-              fill={COLOR_ANNEX}
-              stroke={COLOR_ROOM_STROKE}
-              strokeWidth="2"
-            />
-            <rect
-              x={BUILDING.annexBottom.x}
-              y={BUILDING.annexBottom.y}
-              width={BUILDING.annexBottom.w}
-              height={BUILDING.annexBottom.h}
-              fill={COLOR_ANNEX}
-              stroke={COLOR_ROOM_STROKE}
-              strokeWidth="2"
-            />
-            {/* Green pads inside annex */}
-            <rect
-              x={BUILDING.greenTop.x}
-              y={BUILDING.greenTop.y}
-              width={BUILDING.greenTop.w}
-              height={BUILDING.greenTop.h}
-              fill={COLOR_GREEN_PAD}
-            />
-            <rect
-              x={BUILDING.greenBottom.x}
-              y={BUILDING.greenBottom.y}
-              width={BUILDING.greenBottom.w}
-              height={BUILDING.greenBottom.h}
-              fill={COLOR_GREEN_PAD}
-            />
-          </g>
-
-          {/* Corridors */}
-          <g>
-            {BUILDING.corridorsH.map((c, i) => (
-              <rect
-                key={`ch-${i}`}
-                x={c.x}
-                y={c.y}
-                width={c.w}
-                height={c.h}
-                fill={COLOR_CORRIDOR}
-                stroke={COLOR_CORRIDOR_EDGE}
-                strokeWidth="1"
-              />
-            ))}
-            {BUILDING.corridorsV.map((c, i) => (
-              <rect
-                key={`cv-${i}`}
-                x={c.x}
-                y={c.y}
-                width={c.w}
-                height={c.h}
-                fill={COLOR_CORRIDOR}
-                stroke={COLOR_CORRIDOR_EDGE}
-                strokeWidth="1"
-              />
-            ))}
-            {/* Corridor markings (zebra dashes) */}
-            <g
-              stroke="oklch(0.78 0.18 250 / 0.18)"
-              strokeWidth="1.4"
-              strokeDasharray="6 8"
-              fill="none"
-            >
-              <line x1="90" y1="369" x2="830" y2="369" />
-              <line x1="574" y1="80" x2="574" y2="640" />
-            </g>
-          </g>
-
-          {/* Inner courtyards (dark green strips) */}
-          <g>
-            {BUILDING.innerGreens.map((g, i) => (
-              <rect
-                key={`g-${i}`}
-                x={g.x}
-                y={g.y}
-                width={g.w}
-                height={g.h}
-                fill={COLOR_GREEN}
-                stroke={COLOR_ROOM_STROKE}
-                strokeWidth="1.5"
-              />
-            ))}
+            {/* Dark background */}
+            <rect x="0" y="0" width="1000" height="1000" fill={COLOR_BG} />
+            
+            {/* Main white floor area */}
+            <rect x="40" y="40" width="920" height="920" rx="4" fill={COLOR_FLOOR} stroke={COLOR_CORRIDOR_STROKE} strokeWidth="2" />
+            
+            {/* Explicit corridors (optional if floor area is already white, but helps define paths visually) */}
+            {/* These rects ensure the paths are clearly white */}
           </g>
 
           {/* POIs as blocks */}
