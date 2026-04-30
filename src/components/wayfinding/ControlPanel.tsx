@@ -130,17 +130,68 @@ export function ControlPanel({
         </div>
       </div>
 
-      <Button
-        className="mt-4 w-full h-11 rounded-xl text-sm font-semibold border-0"
-        style={{
-          background: "linear-gradient(135deg, var(--primary), var(--primary-glow))",
-          boxShadow: "var(--shadow-glow)",
-        }}
-        disabled={loading}
-      >
-        <Navigation className="h-4 w-4 mr-2" />
-        Iniciar Navegação
-      </Button>
+      <div className="mt-4 flex gap-2">
+        <Button
+          className="flex-1 h-11 rounded-xl text-sm font-semibold border-0"
+          style={{
+            background: "linear-gradient(135deg, var(--primary), var(--primary-glow))",
+            boxShadow: "var(--shadow-glow)",
+          }}
+          disabled={loading}
+        >
+          <Navigation className="h-4 w-4 mr-2" />
+          Iniciar Navegação
+        </Button>
+        <button
+          onClick={onToggleFavorite}
+          className={`h-11 w-11 rounded-xl grid place-items-center border transition-all ${
+            isFavorite
+              ? "border-accent/60 bg-accent/15 text-accent shadow-[0_0_18px_-4px_var(--accent)]"
+              : "border-border bg-white/[0.03] text-muted-foreground hover:text-foreground hover:bg-white/[0.06]"
+          }`}
+          aria-label={isFavorite ? "Remover dos favoritos" : "Salvar como favorito"}
+          title={isFavorite ? "Remover dos favoritos" : "Salvar rota"}
+        >
+          <Star className={`h-4 w-4 ${isFavorite ? "fill-current" : ""}`} />
+        </button>
+      </div>
+
+      {/* Favoritos */}
+      {favorites.length > 0 && (
+        <div className="mt-4">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground inline-flex items-center gap-1.5">
+              <Star className="h-3 w-3 fill-accent text-accent" />
+              Rotas favoritas
+            </p>
+            <span className="text-[10px] text-muted-foreground tabular-nums">{favorites.length}/12</span>
+          </div>
+          <div className="flex flex-wrap gap-1.5 max-h-[120px] overflow-y-auto pr-1">
+            {favorites.map((f) => (
+              <div
+                key={f.id}
+                className="group inline-flex items-center gap-1 rounded-full border border-border bg-white/[0.04] hover:bg-white/[0.08] transition-colors pl-2 pr-1 py-1 text-[11px]"
+              >
+                <button
+                  onClick={() => onSelectFavorite(f)}
+                  className="inline-flex items-center gap-1 max-w-[180px] truncate"
+                  title={f.label}
+                >
+                  <Navigation className="h-3 w-3 text-primary shrink-0" />
+                  <span className="truncate">{f.label}</span>
+                </button>
+                <button
+                  onClick={() => onRemoveFavorite(f.id)}
+                  className="h-5 w-5 rounded-full grid place-items-center text-muted-foreground hover:text-destructive hover:bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity"
+                  aria-label="Remover favorito"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
