@@ -4,6 +4,7 @@ import { ControlPanel } from "@/components/wayfinding/ControlPanel";
 import { MapCanvas } from "@/components/wayfinding/MapCanvas";
 import { BottomSheet } from "@/components/wayfinding/BottomSheet";
 import { ReferenceBanner } from "@/components/wayfinding/ReferenceBanner";
+import { RouteSteps } from "@/components/wayfinding/RouteSteps";
 import {
   FLOORS,
   findPoi,
@@ -139,6 +140,9 @@ function Index() {
           <h1 className="text-sm font-bold tracking-[0.18em]">ATLAS · ENGENHARIA</h1>
         </div>
         {panel}
+        <div className="mt-3">
+          <RouteSteps plan={plan} origin={origin} destination={destination} loading={loading} />
+        </div>
       </aside>
 
       {/* Footer reference banner — desktop */}
@@ -152,7 +156,12 @@ function Index() {
       </div>
 
       {/* Mobile bottom sheet */}
-      <BottomSheet>{panel}</BottomSheet>
+      <BottomSheet>
+        <div className="space-y-3">
+          {panel}
+          <RouteSteps plan={plan} origin={origin} destination={destination} loading={loading} />
+        </div>
+      </BottomSheet>
     </main>
   );
 }
