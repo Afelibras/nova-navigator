@@ -1,19 +1,47 @@
-import { useEffect, useRef, useState } from "react";
-import { Plus, Minus, LocateFixed, Layers } from "lucide-react";
-import type { Poi } from "./types";
-import { buildRoute } from "./types";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Plus, Minus, LocateFixed, Layers, ArrowUp, ArrowDown } from "lucide-react";
+import type { Poi, RoutePlan } from "./types";
+import { BUILDING, poisOnFloor } from "./types";
 
 type Props = {
   origin: Poi;
   destination: Poi;
-  pois: Poi[];
+  plan: RoutePlan;
   loading: boolean;
+  floor: number;
+  onFloorChange: (floor: number) => void;
+  floors: readonly number[];
 };
 
 const VIEW_W = 1000;
-const VIEW_H = 700;
+const VIEW_H = 720;
 
-export function MapCanvas({ origin, destination, pois, loading }: Props) {
+// --- Visual palette (matches the photo) ---
+const COLOR_FLOOR_BG = "oklch(0.22 0.04 260)";
+const COLOR_CORRIDOR = "oklch(0.30 0.02 260)";
+const COLOR_CORRIDOR_EDGE = "oklch(0.18 0.02 260)";
+const COLOR_ROOM = "oklch(0.55 0.10 220)"; // teal/blue rooms
+const COLOR_ROOM_STROKE = "oklch(0.18 0.04 260)";
+const COLOR_GREEN = "oklch(0.45 0.10 175)"; // dark green courtyards
+const COLOR_ANNEX = "oklch(0.30 0.10 255)"; // navy east annex
+const COLOR_GREEN_PAD = "oklch(0.40 0.09 175)";
+const COLOR_ELEVATOR = "oklch(0.32 0.08 30)"; // brown
+const COLOR_RESTROOM_M = "oklch(0.40 0.18 295)";
+const COLOR_RESTROOM_F = "oklch(0.45 0.18 330)";
+const COLOR_STAIRS = "oklch(0.50 0.12 260)";
+const COLOR_ENTRANCE = "oklch(0.55 0.18 165)";
+const COLOR_EXIT = "oklch(0.55 0.20 30)";
+const COLOR_CAFE = "oklch(0.55 0.14 60)";
+
+export function MapCanvas({
+  origin,
+  destination,
+  plan,
+  loading,
+  floor,
+  onFloorChange,
+  floors,
+}: Props) {
   const [zoom, setZoom] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [routeVisible, setRouteVisible] = useState(false);
@@ -24,16 +52,15 @@ export function MapCanvas({ origin, destination, pois, loading }: Props) {
     if (loading) return;
     const t = setTimeout(() => setRouteVisible(true), 80);
     return () => clearTimeout(t);
-  }, [origin.id, destination.id, loading]);
+  }, [origin.id, destination.id, loading, floor]);
 
-  const route = buildRoute(origin, destination);
-  const pathD = route.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
+  const pois = useMemo(() => poisOnFloor(floor), [floor]);
+  const floorSegment = plan.segments.find((s) => s.floor === floor);
 
   function recenter() {
     setZoom(1);
     setOffset({ x: 0, y: 0 });
   }
-
   function onPointerDown(e: React.PointerEvent) {
     (e.target as Element).setPointerCapture(e.pointerId);
     dragRef.current = { x: e.clientX, y: e.clientY, ox: offset.x, oy: offset.y };
@@ -48,6 +75,9 @@ export function MapCanvas({ origin, destination, pois, loading }: Props) {
   function onPointerUp() {
     dragRef.current = null;
   }
+
+  const showOrigin = origin.floor === floor;
+  const showDest = destination.floor === floor;
 
   return (
     <div className="absolute inset-0 overflow-hidden grid-bg">
@@ -91,57 +121,133 @@ export function MapCanvas({ origin, destination, pois, loading }: Props) {
                 <feMergeNode in="SourceGraphic" />
               </feMerge>
             </filter>
+            <pattern id="floor-tex" patternUnits="userSpaceOnUse" width="22" height="22">
+              <rect width="22" height="22" fill={COLOR_FLOOR_BG} />
+              <path d="M0 22 L22 0" stroke="oklch(1 0 0 / 0.025)" strokeWidth="0.5" />
+            </pattern>
           </defs>
 
-          {/* Floorplan walls (decorative) */}
-          <g stroke="oklch(1 0 0 / 0.18)" strokeWidth="2" fill="oklch(1 0 0 / 0.02)">
-            <rect x="40" y="40" width="920" height="620" rx="16" />
-            <rect x="80" y="80" width="380" height="220" rx="8" />
-            <rect x="540" y="80" width="380" height="220" rx="8" />
-            <rect x="80" y="380" width="380" height="240" rx="8" />
-            <rect x="540" y="380" width="380" height="240" rx="8" />
-          </g>
-
-          {/* Corridors — base */}
+          {/* Building shell */}
           <g>
-            {/* Horizontal corridors */}
-            <rect x="60" y="120" width="880" height="22" rx="4" fill="oklch(1 0 0 / 0.05)" />
-            <rect x="60" y="340" width="880" height="44" rx="6" fill="oklch(1 0 0 / 0.07)" />
-            <rect x="60" y="570" width="880" height="22" rx="4" fill="oklch(1 0 0 / 0.05)" />
-            {/* Vertical corridors */}
-            <rect x="490" y="60" width="44" height="600" rx="6" fill="oklch(1 0 0 / 0.07)" />
-            <rect x="60" y="60" width="22" height="600" rx="4" fill="oklch(1 0 0 / 0.04)" />
-          </g>
-          {/* Corridor center dashed guide lines */}
-          <g
-            stroke="oklch(0.78 0.18 250 / 0.25)"
-            strokeWidth="1"
-            strokeDasharray="6 8"
-            fill="none"
-          >
-            <line x1="60" y1="362" x2="940" y2="362" />
-            <line x1="512" y1="60" x2="512" y2="660" />
+            {/* Main building floor texture */}
+            <rect
+              x={BUILDING.main.x}
+              y={BUILDING.main.y}
+              width={BUILDING.main.w}
+              height={BUILDING.main.h}
+              rx="6"
+              fill="url(#floor-tex)"
+              stroke="oklch(1 0 0 / 0.1)"
+              strokeWidth="2"
+            />
+
+            {/* East annex (navy) */}
+            <rect
+              x={BUILDING.annexTop.x}
+              y={BUILDING.annexTop.y}
+              width={BUILDING.annexTop.w}
+              height={BUILDING.annexTop.h}
+              fill={COLOR_ANNEX}
+              stroke={COLOR_ROOM_STROKE}
+              strokeWidth="2"
+            />
+            <rect
+              x={BUILDING.annexBottom.x}
+              y={BUILDING.annexBottom.y}
+              width={BUILDING.annexBottom.w}
+              height={BUILDING.annexBottom.h}
+              fill={COLOR_ANNEX}
+              stroke={COLOR_ROOM_STROKE}
+              strokeWidth="2"
+            />
+            {/* Green pads inside annex */}
+            <rect
+              x={BUILDING.greenTop.x}
+              y={BUILDING.greenTop.y}
+              width={BUILDING.greenTop.w}
+              height={BUILDING.greenTop.h}
+              fill={COLOR_GREEN_PAD}
+            />
+            <rect
+              x={BUILDING.greenBottom.x}
+              y={BUILDING.greenBottom.y}
+              width={BUILDING.greenBottom.w}
+              height={BUILDING.greenBottom.h}
+              fill={COLOR_GREEN_PAD}
+            />
           </g>
 
-          {/* Corridor labels */}
-          <g fontFamily="Inter, sans-serif" fontSize="9" fill="oklch(1 0 0 / 0.35)" fontWeight={600} letterSpacing="2">
-            <text x="70" y="357" textAnchor="start">CORREDOR PRINCIPAL</text>
-            <text x="520" y="75" textAnchor="start">EIXO N–S</text>
+          {/* Corridors */}
+          <g>
+            {BUILDING.corridorsH.map((c, i) => (
+              <rect
+                key={`ch-${i}`}
+                x={c.x}
+                y={c.y}
+                width={c.w}
+                height={c.h}
+                fill={COLOR_CORRIDOR}
+                stroke={COLOR_CORRIDOR_EDGE}
+                strokeWidth="1"
+              />
+            ))}
+            {BUILDING.corridorsV.map((c, i) => (
+              <rect
+                key={`cv-${i}`}
+                x={c.x}
+                y={c.y}
+                width={c.w}
+                height={c.h}
+                fill={COLOR_CORRIDOR}
+                stroke={COLOR_CORRIDOR_EDGE}
+                strokeWidth="1"
+              />
+            ))}
+            {/* Corridor markings (zebra dashes) */}
+            <g
+              stroke="oklch(0.78 0.18 250 / 0.18)"
+              strokeWidth="1.4"
+              strokeDasharray="6 8"
+              fill="none"
+            >
+              <line x1="90" y1="369" x2="830" y2="369" />
+              <line x1="574" y1="80" x2="574" y2="640" />
+            </g>
           </g>
 
-          {/* POIs */}
-          {pois.map((p) => {
-            const isOrigin = p.id === origin.id;
-            const isDest = p.id === destination.id;
-            if (isOrigin || isDest) return null;
-            return <PoiMarker key={p.id} poi={p} />;
-          })}
+          {/* Inner courtyards (dark green strips) */}
+          <g>
+            {BUILDING.innerGreens.map((g, i) => (
+              <rect
+                key={`g-${i}`}
+                x={g.x}
+                y={g.y}
+                width={g.w}
+                height={g.h}
+                fill={COLOR_GREEN}
+                stroke={COLOR_ROOM_STROKE}
+                strokeWidth="1.5"
+              />
+            ))}
+          </g>
 
-          {/* Route */}
-          {routeVisible && (
-            <>
+          {/* POIs as blocks */}
+          <g>
+            {pois.map((p) => (
+              <PoiBlock
+                key={p.id}
+                poi={p}
+                isOrigin={p.id === origin.id && showOrigin}
+                isDestination={p.id === destination.id && showDest}
+              />
+            ))}
+          </g>
+
+          {/* Route on this floor */}
+          {routeVisible && floorSegment && (
+            <g>
               <path
-                d={pathD}
+                d={pathD(floorSegment.points)}
                 fill="none"
                 stroke="url(#route-grad)"
                 strokeWidth="6"
@@ -151,7 +257,7 @@ export function MapCanvas({ origin, destination, pois, loading }: Props) {
                 filter="url(#glow)"
               />
               <path
-                d={pathD}
+                d={pathD(floorSegment.points)}
                 fill="none"
                 stroke="url(#route-grad)"
                 strokeWidth="3"
@@ -160,35 +266,48 @@ export function MapCanvas({ origin, destination, pois, loading }: Props) {
                 strokeDasharray="14 18"
                 style={{ animation: "flow 1.6s linear infinite" }}
               />
-            </>
+            </g>
           )}
 
-          {/* Destination pin (3D minimalist) */}
-          <g transform={`translate(${destination.x}, ${destination.y})`}>
-            <ellipse cx="0" cy="6" rx="10" ry="3" fill="oklch(0 0 0 / 0.45)" />
-            <path
-              d="M0,-28 C-12,-28 -16,-18 -16,-12 C-16,-2 -4,6 0,10 C4,6 16,-2 16,-12 C16,-18 12,-28 0,-28 Z"
-              fill="url(#route-grad)"
-              filter="url(#glow)"
-            />
-            <circle cx="0" cy="-14" r="5" fill="oklch(0.99 0 0)" />
-          </g>
-
-          {/* Origin marker (sonar pulse rendered via HTML overlay below for crisper effect) */}
-          <g transform={`translate(${origin.x}, ${origin.y})`}>
-            <circle r="9" fill="oklch(0.68 0.19 255)" filter="url(#glow)" />
-            <circle r="4" fill="oklch(0.99 0 0)" />
-          </g>
+          {/* Origin / Destination markers (only when on this floor) */}
+          {showOrigin && (
+            <g transform={`translate(${origin.x}, ${origin.y})`}>
+              <circle r="11" fill="oklch(0.68 0.19 255)" filter="url(#glow)" />
+              <circle r="4.5" fill="oklch(0.99 0 0)" />
+            </g>
+          )}
+          {showDest && (
+            <g transform={`translate(${destination.x}, ${destination.y - 8})`}>
+              <ellipse cx="0" cy="14" rx="10" ry="3" fill="oklch(0 0 0 / 0.45)" />
+              <path
+                d="M0,-22 C-12,-22 -16,-12 -16,-6 C-16,4 -4,12 0,16 C4,12 16,4 16,-6 C16,-12 12,-22 0,-22 Z"
+                fill="url(#route-grad)"
+                filter="url(#glow)"
+              />
+              <circle cx="0" cy="-8" r="5" fill="oklch(0.99 0 0)" />
+            </g>
+          )}
         </svg>
 
-        {/* Sonar pulse overlay positioned via percentages of viewBox (scaled with svg) */}
-        <SonarOverlay
-          x={origin.x}
-          y={origin.y}
-          zoom={zoom}
-          offset={offset}
-        />
+        {showOrigin && (
+          <SonarOverlay x={origin.x} y={origin.y} zoom={zoom} offset={offset} />
+        )}
       </div>
+
+      {/* Cross-floor hint */}
+      {plan.floorChange && (
+        <div className="pointer-events-none absolute left-1/2 top-20 z-20 -translate-x-1/2 lg:top-6">
+          <div className="glass rounded-full px-3 py-1.5 text-[11px] flex items-center gap-2">
+            <ArrowUp className="h-3 w-3 text-primary" />
+            <span className="text-muted-foreground">Rota usa</span>
+            <span className="font-semibold">elevador</span>
+            <span className="text-muted-foreground">•</span>
+            <span className="font-semibold">
+              {origin.floor}º <ArrowDown className="inline h-3 w-3" /> {destination.floor}º
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Loading overlay */}
       {loading && (
@@ -204,7 +323,7 @@ export function MapCanvas({ origin, destination, pois, loading }: Props) {
             </div>
             <div>
               <p className="text-sm font-semibold">Calculando melhor rota…</p>
-              <p className="text-xs text-muted-foreground">Analisando corredores e obstáculos</p>
+              <p className="text-xs text-muted-foreground">Analisando corredores e elevadores</p>
             </div>
           </div>
         </div>
@@ -232,7 +351,7 @@ export function MapCanvas({ origin, destination, pois, loading }: Props) {
         <button
           onClick={recenter}
           className="glass rounded-xl h-10 w-10 grid place-items-center hover:bg-white/5 transition-colors"
-          aria-label="Centralizar na minha posição"
+          aria-label="Centralizar"
           title="Centralizar"
         >
           <LocateFixed className="h-5 w-5 text-primary" />
@@ -246,121 +365,185 @@ export function MapCanvas({ origin, destination, pois, loading }: Props) {
         </button>
       </div>
 
+      {/* Floor selector */}
+      <div className="absolute right-4 top-1/2 z-20 -translate-y-1/2">
+        <div className="glass rounded-2xl p-1 flex flex-col gap-1">
+          <p className="text-[9px] uppercase tracking-[0.18em] text-muted-foreground text-center pt-1.5 pb-0.5">
+            Andar
+          </p>
+          {[...floors].slice().reverse().map((f) => {
+            const active = f === floor;
+            const hasOrigin = origin.floor === f;
+            const hasDest = destination.floor === f;
+            return (
+              <button
+                key={f}
+                onClick={() => onFloorChange(f)}
+                className={`relative h-9 w-11 rounded-xl text-sm font-bold tabular-nums transition-all ${
+                  active
+                    ? "bg-primary text-primary-foreground shadow-[0_0_18px_-4px_var(--primary)]"
+                    : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
+                }`}
+                aria-label={`Ir para o ${f}º andar`}
+              >
+                {f}º
+                {(hasOrigin || hasDest) && !active && (
+                  <span
+                    className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full"
+                    style={{
+                      background: hasOrigin ? "var(--primary)" : "var(--accent)",
+                      boxShadow: `0 0 8px ${hasOrigin ? "var(--primary)" : "var(--accent)"}`,
+                    }}
+                  />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Compass / scale */}
       <div className="absolute left-4 top-4 z-20 glass rounded-xl px-3 py-2 flex items-center gap-3 text-xs">
         <div className="relative h-6 w-6">
           <div className="absolute inset-0 rounded-full border border-border" />
-          <div className="absolute left-1/2 top-0 -translate-x-1/2 text-[10px] font-bold text-primary">N</div>
+          <div className="absolute left-1/2 top-0 -translate-x-1/2 text-[10px] font-bold text-primary">
+            N
+          </div>
         </div>
         <div className="h-4 w-px bg-border" />
         <div className="text-muted-foreground">
-          Piso <span className="text-foreground font-semibold">02</span>
+          Piso <span className="text-foreground font-semibold">{String(floor).padStart(2, "0")}</span>
         </div>
         <div className="h-4 w-px bg-border" />
         <div className="text-muted-foreground">
           Zoom <span className="text-foreground font-semibold">{Math.round(zoom * 100)}%</span>
         </div>
       </div>
-    </div>
-  );
-}
 
-function SonarOverlay({
-  x,
-  y,
-  zoom,
-  offset,
-}: {
-  x: number;
-  y: number;
-  zoom: number;
-  offset: { x: number; y: number };
-}) {
-  // Convert SVG coords to % so it follows the svg's preserveAspectRatio mapping.
-  const left = `${(x / VIEW_W) * 100}%`;
-  const top = `${(y / VIEW_H) * 100}%`;
-  return (
-    <div
-      className="pointer-events-none absolute inset-0"
-      style={{
-        transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`,
-        transformOrigin: "center",
-      }}
-    >
-      <div className="absolute" style={{ left, top }}>
-        <span
-          className="absolute h-6 w-6 rounded-full"
-          style={{
-            background: "oklch(0.68 0.19 255 / 0.45)",
-            animation: "sonar 2.2s ease-out infinite",
-          }}
-        />
-        <span
-          className="absolute h-6 w-6 rounded-full"
-          style={{
-            background: "oklch(0.68 0.19 255 / 0.35)",
-            animation: "sonar 2.2s ease-out infinite",
-            animationDelay: "1.1s",
-          }}
-        />
+      {/* Legend */}
+      <div className="absolute left-4 bottom-4 z-20 glass rounded-xl px-3 py-2 hidden sm:flex items-center gap-3 text-[10px] uppercase tracking-wider">
+        <LegendDot color={COLOR_ROOM} label="Salas" />
+        <LegendDot color={COLOR_ELEVATOR} label="Elevador" />
+        <LegendDot color={COLOR_STAIRS} label="Escada" />
+        <LegendDot color={COLOR_RESTROOM_F} label="Banheiro" />
+        <LegendDot color={COLOR_ENTRANCE} label="Entrada" />
+        <LegendDot color={COLOR_EXIT} label="Saída" />
       </div>
     </div>
   );
 }
 
-const MARKER_STYLES: Record<Poi["type"], { color: string; halo: number }> = {
-  elevator: { color: "oklch(0.55 0.18 255)", halo: 18 },
-  stairs: { color: "oklch(0.62 0.16 280)", halo: 16 },
-  room: { color: "oklch(0.42 0.06 260)", halo: 12 },
-  entrance: { color: "oklch(0.62 0.18 165)", halo: 20 },
-  exit: { color: "oklch(0.60 0.22 30)", halo: 22 },
-  restroom: { color: "oklch(0.50 0.10 220)", halo: 16 },
-  "restroom-female": { color: "oklch(0.55 0.18 330)", halo: 16 },
-  "restroom-male": { color: "oklch(0.50 0.15 240)", halo: 16 },
-  cafe: { color: "oklch(0.60 0.16 60)", halo: 14 },
-};
+function pathD(points: { x: number; y: number }[]) {
+  return points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
+}
 
-function PoiMarker({ poi }: { poi: Poi }) {
-  const cfg = MARKER_STYLES[poi.type];
-  const showLabel = poi.type === "room" || poi.type === "entrance" || poi.type === "exit";
+function LegendDot({ color, label }: { color: string; label: string }) {
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span className="h-2.5 w-2.5 rounded-sm" style={{ background: color }} />
+      <span className="text-muted-foreground">{label}</span>
+    </span>
+  );
+}
+
+function PoiBlock({
+  poi,
+  isOrigin,
+  isDestination,
+}: {
+  poi: Poi;
+  isOrigin: boolean;
+  isDestination: boolean;
+}) {
+  const w = poi.w ?? 22;
+  const h = poi.h ?? 22;
+  const x = poi.x - w / 2;
+  const y = poi.y - h / 2;
+
+  const fill = blockColor(poi.type);
+  const isHighlighted = isOrigin || isDestination;
+  const stroke = isHighlighted ? "oklch(0.99 0 0)" : COLOR_ROOM_STROKE;
+  const strokeWidth = isHighlighted ? 2.4 : 1.5;
+
   return (
     <g>
-      <circle cx={poi.x} cy={poi.y} r={cfg.halo} fill={cfg.color} opacity="0.18" />
       <rect
-        x={poi.x - 11}
-        y={poi.y - 11}
-        width={22}
-        height={22}
-        rx={6}
-        fill={cfg.color}
-        opacity="0.95"
-        stroke="oklch(1 0 0 / 0.5)"
-        strokeWidth="1"
+        x={x}
+        y={y}
+        width={w}
+        height={h}
+        rx={3}
+        fill={fill}
+        stroke={stroke}
+        strokeWidth={strokeWidth}
       />
-      <g
-        transform={`translate(${poi.x}, ${poi.y})`}
-        fill="none"
-        stroke="oklch(0.99 0 0)"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <PoiGlyph type={poi.type} />
-      </g>
-      {showLabel && (
-        <text
-          x={poi.x + 16}
-          y={poi.y + 4}
-          fontSize="10"
-          fill="oklch(1 0 0 / 0.7)"
-          fontFamily="Inter, sans-serif"
-          fontWeight={600}
+      {/* Glyph for non-room types */}
+      {poi.type !== "room" && (
+        <g
+          transform={`translate(${poi.x}, ${poi.y})`}
+          fill="none"
+          stroke="oklch(0.99 0 0 / 0.95)"
+          strokeWidth="1.4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
         >
-          {poi.name}
+          <PoiGlyph type={poi.type} />
+        </g>
+      )}
+      {/* Room number label */}
+      {poi.type === "room" && poi.short && w >= 36 && (
+        <text
+          x={poi.x}
+          y={poi.y + 3}
+          textAnchor="middle"
+          fontSize={Math.min(11, Math.max(8, w / 5))}
+          fontFamily="Inter, sans-serif"
+          fontWeight={700}
+          fill="oklch(0.99 0 0 / 0.85)"
+          style={{ pointerEvents: "none" }}
+        >
+          {poi.short}
+        </text>
+      )}
+      {poi.type === "room" && poi.short && w < 36 && (
+        <text
+          x={poi.x}
+          y={poi.y + 3}
+          textAnchor="middle"
+          fontSize={7}
+          fontFamily="Inter, sans-serif"
+          fontWeight={700}
+          fill="oklch(0.99 0 0 / 0.8)"
+          style={{ pointerEvents: "none" }}
+        >
+          {poi.short.slice(-2)}
         </text>
       )}
     </g>
   );
+}
+
+function blockColor(type: Poi["type"]): string {
+  switch (type) {
+    case "elevator":
+      return COLOR_ELEVATOR;
+    case "stairs":
+      return COLOR_STAIRS;
+    case "restroom":
+    case "restroom-male":
+      return COLOR_RESTROOM_M;
+    case "restroom-female":
+      return COLOR_RESTROOM_F;
+    case "entrance":
+      return COLOR_ENTRANCE;
+    case "exit":
+      return COLOR_EXIT;
+    case "cafe":
+      return COLOR_CAFE;
+    case "room":
+    default:
+      return COLOR_ROOM;
+  }
 }
 
 function PoiGlyph({ type }: { type: Poi["type"] }) {
@@ -400,19 +583,12 @@ function PoiGlyph({ type }: { type: Poi["type"] }) {
         </>
       );
     case "restroom-male":
+    case "restroom":
       return (
         <>
           <circle cx="0" cy="-4" r="2" />
           <line x1="0" y1="-2" x2="0" y2="4" />
           <line x1="-3" y1="0" x2="3" y2="0" />
-        </>
-      );
-    case "restroom":
-      return (
-        <>
-          <circle cx="-3" cy="-4" r="1.6" />
-          <circle cx="3" cy="-4" r="1.6" />
-          <line x1="0" y1="-6" x2="0" y2="6" />
         </>
       );
     case "cafe":
@@ -422,9 +598,49 @@ function PoiGlyph({ type }: { type: Poi["type"] }) {
           <path d="M 4 0 Q 7 0 7 3 Q 7 5 4 5" />
         </>
       );
-    case "room":
     default:
-      return <circle cx="0" cy="0" r="2" fill="oklch(0.99 0 0)" stroke="none" />;
+      return null;
   }
 }
 
+function SonarOverlay({
+  x,
+  y,
+  zoom,
+  offset,
+}: {
+  x: number;
+  y: number;
+  zoom: number;
+  offset: { x: number; y: number };
+}) {
+  const left = `${(x / VIEW_W) * 100}%`;
+  const top = `${(y / VIEW_H) * 100}%`;
+  return (
+    <div
+      className="pointer-events-none absolute inset-0"
+      style={{
+        transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`,
+        transformOrigin: "center",
+      }}
+    >
+      <div className="absolute" style={{ left, top }}>
+        <span
+          className="absolute h-6 w-6 rounded-full"
+          style={{
+            background: "oklch(0.68 0.19 255 / 0.45)",
+            animation: "sonar 2.2s ease-out infinite",
+          }}
+        />
+        <span
+          className="absolute h-6 w-6 rounded-full"
+          style={{
+            background: "oklch(0.68 0.19 255 / 0.35)",
+            animation: "sonar 2.2s ease-out infinite",
+            animationDelay: "1.1s",
+          }}
+        />
+      </div>
+    </div>
+  );
+}

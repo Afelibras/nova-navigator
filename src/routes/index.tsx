@@ -4,7 +4,12 @@ import { ControlPanel } from "@/components/wayfinding/ControlPanel";
 import { MapCanvas } from "@/components/wayfinding/MapCanvas";
 import { BottomSheet } from "@/components/wayfinding/BottomSheet";
 import { ReferenceBanner } from "@/components/wayfinding/ReferenceBanner";
-import { POIS, buildRoute, findPoi, nearestPoi, routeLength } from "@/components/wayfinding/types";
+import {
+  FLOORS,
+  findPoi,
+  nearestPoi,
+  planRoute,
+} from "@/components/wayfinding/types";
 import { useFavorites, type FavoriteRoute } from "@/hooks/use-favorites";
 
 export const Route = createFileRoute("/")({
@@ -22,20 +27,22 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
-  const [originId, setOriginId] = useState("entrance");
-  const [destinationId, setDestinationId] = useState("r-1413");
+  const [originId, setOriginId] = useState("entrance-f1");
+  const [destinationId, setDestinationId] = useState("r-3413-f3");
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(1);
+  const [currentFloor, setCurrentFloor] = useState<number>(1);
   const { favorites, isFavorite, toggle, remove } = useFavorites();
 
   const origin = findPoi(originId);
   const destination = findPoi(destinationId);
 
-  const { distance, duration } = useMemo(() => {
-    const pts = buildRoute(origin, destination);
-    const d = routeLength(pts);
-    return { distance: d, duration: (d / 1.3) }; // ~1.3 m/s walking pace
-  }, [origin, destination]);
+  const plan = useMemo(() => planRoute(origin, destination), [origin, destination]);
+
+  // Whenever destination/origin changes, focus the floor that contains origin first.
+  useEffect(() => {
+    setCurrentFloor(origin.floor);
+  }, [origin.floor]);
 
   // Simulate route calculation when origin/destination change
   useEffect(() => {
@@ -61,14 +68,14 @@ function Index() {
     setDestinationId(originId);
   }
 
-  const reference = nearestPoi(destination, origin.id).name;
+  const reference = nearestPoi(destination, origin.id)?.name ?? destination.name;
   const favorited = isFavorite(originId, destinationId);
 
   function onToggleFavorite() {
     toggle({
       originId,
       destinationId,
-      label: `${origin.name} → ${destination.name}`,
+      label: `${origin.name} (${origin.floor}º) → ${destination.name} (${destination.floor}º)`,
     });
   }
 
@@ -84,8 +91,8 @@ function Index() {
       onOriginChange={(id) => id !== destinationId && setOriginId(id)}
       onDestinationChange={(id) => id !== originId && setDestinationId(id)}
       onSwap={swap}
-      distance={distance}
-      duration={duration}
+      distance={plan.distance}
+      duration={plan.duration}
       loading={loading}
       progress={progress}
       favorites={favorites}
@@ -101,12 +108,20 @@ function Index() {
       {/* Top brand bar */}
       <header className="pointer-events-none absolute inset-x-0 top-0 z-30 flex justify-center pt-4 lg:hidden">
         <div className="glass rounded-full px-4 py-1.5 text-xs font-semibold tracking-wider">
-          ATLAS · INDOOR NAV
+          ATLAS · ENG · 6 ANDARES
         </div>
       </header>
 
       {/* Map */}
-      <MapCanvas origin={origin} destination={destination} pois={POIS} loading={loading} />
+      <MapCanvas
+        origin={origin}
+        destination={destination}
+        plan={plan}
+        loading={loading}
+        floor={currentFloor}
+        onFloorChange={setCurrentFloor}
+        floors={FLOORS}
+      />
 
       {/* Desktop floating panel */}
       <aside className="pointer-events-auto absolute left-6 top-6 z-30 hidden w-[360px] lg:block">
@@ -121,7 +136,7 @@ function Index() {
           >
             A
           </div>
-          <h1 className="text-sm font-bold tracking-[0.18em]">ATLAS · INDOOR NAV</h1>
+          <h1 className="text-sm font-bold tracking-[0.18em]">ATLAS · ENGENHARIA</h1>
         </div>
         {panel}
       </aside>
