@@ -1,7 +1,18 @@
+export type PoiType =
+  | "elevator"
+  | "stairs"
+  | "room"
+  | "entrance"
+  | "exit"
+  | "restroom"
+  | "restroom-female"
+  | "restroom-male"
+  | "cafe";
+
 export type Poi = {
   id: string;
   name: string;
-  type: "elevator" | "stairs" | "room" | "entrance" | "restroom" | "cafe";
+  type: PoiType;
   x: number; // canvas coords (0-1000)
   y: number; // canvas coords (0-700)
 };
