@@ -237,7 +237,21 @@ function PoiSelect({
         <SelectTrigger
           className="!bg-transparent border-0 !h-11 pl-3 pr-12 text-sm font-medium focus:ring-0 focus:ring-offset-0 shadow-none"
         >
-          <SelectValue />
+          <SelectValue placeholder="Selecione…">
+            {(() => {
+              const p = POIS.find((x) => x.id === value);
+              if (!p) return "Selecione…";
+              return (
+                <span className="inline-flex items-center gap-2">
+                  <Dot type={p.type} />
+                  <span>{p.name}</span>
+                  <span className="text-[10px] text-muted-foreground tabular-nums">
+                    {p.floor}º andar
+                  </span>
+                </span>
+              );
+            })()}
+          </SelectValue>
         </SelectTrigger>
         <SelectContent className="glass-strong border-border max-h-[320px]">
           {[1, 2, 3, 4, 5, 6].map((floor) => {
