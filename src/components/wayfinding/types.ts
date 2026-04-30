@@ -207,18 +207,79 @@ export function nearestElevator(p: Poi): Poi {
     .sort((a, b) => Math.hypot(a.x - p.x, a.y - p.y) - Math.hypot(b.x - p.x, b.y - p.y))[0];
 }
 
-// Manhattan-ish corridor route between two points using the central corridors.
-// Routes always pass through the main horizontal/vertical corridor for realism.
+// Corridor network — the route is constrained to these axes so the line never
+// crosses through rooms. Horizontal axes run east-west; the vertical axis splits
+// the building. A POI "exits" through the nearest corridor (its door).
+const CORRIDORS_H = [369, 609]; // y of main + bottom corridors (centers of grey strips)
+const CORRIDORS_V = [574];      // x of central vertical corridor
+
+function nearest(value: number, options: number[]): number {
+  return options.reduce((best, v) =>
+    Math.abs(v - value) < Math.abs(best - value) ? v : best,
+  options[0]);
+}
+
+/**
+ * Door point of a POI: the point on the block's edge that touches the closest
+ * corridor. For rooms above the main corridor we exit downward, below it
+ * upward, etc. For services without w/h we just use the center.
+ */
+function doorOf(p: Poi): { x: number; y: number; axis: "h" | "v"; corridorY: number; corridorX: number } {
+  const corridorY = nearest(p.y, CORRIDORS_H);
+  const corridorX = nearest(p.x, CORRIDORS_V);
+  // Choose whether the room exits to a horizontal or vertical corridor by
+  // picking whichever is closer to the block center.
+  const dH = Math.abs(p.y - corridorY);
+  const dV = Math.abs(p.x - corridorX);
+  const axis: "h" | "v" = dH <= dV ? "h" : "v";
+
+  const halfW = (p.w ?? 0) / 2;
+  const halfH = (p.h ?? 0) / 2;
+
+  if (axis === "h") {
+    // Door is on the top or bottom edge, aligned with the room's x.
+    const doorY = p.y + (corridorY > p.y ? halfH : -halfH);
+    return { x: p.x, y: doorY, axis, corridorY, corridorX };
+  } else {
+    const doorX = p.x + (corridorX > p.x ? halfW : -halfW);
+    return { x: doorX, y: p.y, axis, corridorY, corridorX };
+  }
+}
+
+/**
+ * Build a route that stays inside the corridor network.
+ * Path: A center -> A door -> A corridor -> [vertical corridor if needed]
+ *      -> B corridor -> B door -> B center.
+ */
 export function buildRoute(a: Poi, b: Poi): { x: number; y: number }[] {
-  const corridorY = 369; // center of horizontal corridor
-  const corridorX = 574; // center of vertical corridor
-  return [
-    { x: a.x, y: a.y },
-    { x: a.x, y: corridorY },
-    { x: corridorX, y: corridorY },
-    { x: b.x, y: corridorY },
-    { x: b.x, y: b.y },
-  ];
+  const da = doorOf(a);
+  const db = doorOf(b);
+
+  const pts: { x: number; y: number }[] = [];
+  pts.push({ x: a.x, y: a.y });          // start at room center
+  pts.push({ x: da.x, y: da.y });        // walk to door
+
+  // Step onto the corridor lane next to A
+  const aLaneY = da.corridorY;
+  pts.push({ x: da.x, y: aLaneY });
+
+  // If destination uses a different horizontal lane, transit via vertical corridor
+  const bLaneY = db.corridorY;
+  if (aLaneY !== bLaneY) {
+    const vx = CORRIDORS_V[0];
+    pts.push({ x: vx, y: aLaneY });
+    pts.push({ x: vx, y: bLaneY });
+    pts.push({ x: db.x, y: bLaneY });
+  } else {
+    // Same horizontal lane — just walk along it
+    pts.push({ x: db.x, y: aLaneY });
+  }
+
+  pts.push({ x: db.x, y: db.y });        // arrive at door
+  pts.push({ x: b.x, y: b.y });          // into room center
+
+  // Remove consecutive duplicates
+  return pts.filter((p, i) => i === 0 || p.x !== pts[i - 1].x || p.y !== pts[i - 1].y);
 }
 
 export function routeLength(points: { x: number; y: number }[]): number {
