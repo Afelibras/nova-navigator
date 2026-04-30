@@ -4,6 +4,7 @@ import { ControlPanel } from "@/components/wayfinding/ControlPanel";
 import { MapCanvas } from "@/components/wayfinding/MapCanvas";
 import { BottomSheet } from "@/components/wayfinding/BottomSheet";
 import { ReferenceBanner } from "@/components/wayfinding/ReferenceBanner";
+import { RouteSteps } from "@/components/wayfinding/RouteSteps";
 import {
   FLOORS,
   findPoi,
