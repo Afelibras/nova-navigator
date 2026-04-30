@@ -307,3 +307,124 @@ function SonarOverlay({
     </div>
   );
 }
+
+const MARKER_STYLES: Record<Poi["type"], { color: string; halo: number }> = {
+  elevator: { color: "oklch(0.55 0.18 255)", halo: 18 },
+  stairs: { color: "oklch(0.62 0.16 280)", halo: 16 },
+  room: { color: "oklch(0.42 0.06 260)", halo: 12 },
+  entrance: { color: "oklch(0.62 0.18 165)", halo: 20 },
+  exit: { color: "oklch(0.60 0.22 30)", halo: 22 },
+  restroom: { color: "oklch(0.50 0.10 220)", halo: 16 },
+  "restroom-female": { color: "oklch(0.55 0.18 330)", halo: 16 },
+  "restroom-male": { color: "oklch(0.50 0.15 240)", halo: 16 },
+  cafe: { color: "oklch(0.60 0.16 60)", halo: 14 },
+};
+
+function PoiMarker({ poi }: { poi: Poi }) {
+  const cfg = MARKER_STYLES[poi.type];
+  const showLabel = poi.type === "room" || poi.type === "entrance" || poi.type === "exit";
+  return (
+    <g>
+      <circle cx={poi.x} cy={poi.y} r={cfg.halo} fill={cfg.color} opacity="0.18" />
+      <rect
+        x={poi.x - 11}
+        y={poi.y - 11}
+        width={22}
+        height={22}
+        rx={6}
+        fill={cfg.color}
+        opacity="0.95"
+        stroke="oklch(1 0 0 / 0.5)"
+        strokeWidth="1"
+      />
+      <g
+        transform={`translate(${poi.x}, ${poi.y})`}
+        fill="none"
+        stroke="oklch(0.99 0 0)"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <PoiGlyph type={poi.type} />
+      </g>
+      {showLabel && (
+        <text
+          x={poi.x + 16}
+          y={poi.y + 4}
+          fontSize="10"
+          fill="oklch(1 0 0 / 0.7)"
+          fontFamily="Inter, sans-serif"
+          fontWeight={600}
+        >
+          {poi.name}
+        </text>
+      )}
+    </g>
+  );
+}
+
+function PoiGlyph({ type }: { type: Poi["type"] }) {
+  switch (type) {
+    case "elevator":
+      return (
+        <>
+          <path d="M -3 -4 L 0 -7 L 3 -4" />
+          <path d="M -3 4 L 0 7 L 3 4" />
+          <line x1="0" y1="-7" x2="0" y2="-1" />
+          <line x1="0" y1="1" x2="0" y2="7" />
+        </>
+      );
+    case "stairs":
+      return <path d="M -6 5 L -2 5 L -2 1 L 2 1 L 2 -3 L 6 -3 L 6 -7" />;
+    case "entrance":
+      return (
+        <>
+          <path d="M -5 6 L -5 -6 L 5 -6 L 5 6" />
+          <path d="M -2 0 L 5 0" />
+          <path d="M 2 -3 L 5 0 L 2 3" />
+        </>
+      );
+    case "exit":
+      return (
+        <>
+          <path d="M -5 -6 L -5 6 L 1 6" />
+          <path d="M -1 0 L 6 0" />
+          <path d="M 3 -3 L 6 0 L 3 3" />
+        </>
+      );
+    case "restroom-female":
+      return (
+        <>
+          <circle cx="0" cy="-4" r="2" />
+          <path d="M -3 4 L 0 -2 L 3 4 Z" />
+        </>
+      );
+    case "restroom-male":
+      return (
+        <>
+          <circle cx="0" cy="-4" r="2" />
+          <line x1="0" y1="-2" x2="0" y2="4" />
+          <line x1="-3" y1="0" x2="3" y2="0" />
+        </>
+      );
+    case "restroom":
+      return (
+        <>
+          <circle cx="-3" cy="-4" r="1.6" />
+          <circle cx="3" cy="-4" r="1.6" />
+          <line x1="0" y1="-6" x2="0" y2="6" />
+        </>
+      );
+    case "cafe":
+      return (
+        <>
+          <path d="M -4 -2 L -4 4 Q -4 6 -2 6 L 2 6 Q 4 6 4 4 L 4 -2 Z" />
+          <path d="M 4 0 Q 7 0 7 3 Q 7 5 4 5" />
+        </>
+      );
+    case "room":
+    default:
+      return <circle cx="0" cy="0" r="2" fill="oklch(0.99 0 0)" stroke="none" />;
+  }
+}
+
