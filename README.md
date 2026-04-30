@@ -2,6 +2,32 @@
 
 Sistema de navegação interna ultra-moderno com mapa SVG interativo, rotas otimizadas em tempo real, autenticação e painel administrativo.
 
+## Primeiro: Como rodar no seu computador?
+
+1. **Instale o Node.js** (se ainda não tiver)
+   - Baixe em [nodejs.org](https://nodejs.org/) (recomendado a versão **LTS**).
+   - Para confirmar que instalou, abra o terminal e digite: `node -v` (deve aparecer v20 ou maior).
+
+2. **Baixe o código**
+   - Clique no botão verde **Code** lá em cima no GitHub e selecione **Download ZIP**.
+   - Extraia a pasta no seu computador.
+   - Abra o terminal e entre na pasta:
+     ```bash
+     cd nova-navigator
+     ```
+
+3. **Instale as dependências**
+   ```bash
+   npm install
+   ```
+
+4. **Rode o projeto**
+   ```bash
+   npm run dev
+   ```
+   - O terminal vai mostrar um link (geralmente `http://localhost:8080`).
+   - Clique nele ou copie e cole no navegador.
+
 ## Stack
 
 - **Frontend:** React 19 + TypeScript + TanStack Router + TanStack Start
@@ -14,6 +40,24 @@ Sistema de navegação interna ultra-moderno com mapa SVG interativo, rotas otim
 ## Requisitos
 
 - [Node.js](https://nodejs.org/) >= 20 ou [Bun](https://bun.sh/) >= 1.0
+
+> **Não tem o Node.js instalado?** Veja como instalar no seu sistema operacional abaixo:
+> 
+> **Ubuntu/Debian:**
+> ```bash
+> sudo apt install curl -y
+> curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+> source ~/.bashrc
+> nvm install 20
+> ```
+>
+> **Windows (WSL ou Prompt):**
+> Baixe o instalador direto em [nodejs.org](https://nodejs.org/) (versão LTS).
+>
+> **MacOS:**
+> ```bash
+> brew install node
+> ```
 
 ## Instalação
 
