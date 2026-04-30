@@ -140,6 +140,9 @@ function Index() {
           <h1 className="text-sm font-bold tracking-[0.18em]">ATLAS · ENGENHARIA</h1>
         </div>
         {panel}
+        <div className="mt-3">
+          <RouteSteps plan={plan} origin={origin} destination={destination} loading={loading} />
+        </div>
       </aside>
 
       {/* Footer reference banner — desktop */}
