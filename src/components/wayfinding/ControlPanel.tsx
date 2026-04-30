@@ -1,4 +1,4 @@
-import { ArrowUpDown, MapPin, Navigation, Clock, Footprints, Sparkles } from "lucide-react";
+import { ArrowUpDown, MapPin, Navigation, Clock, Footprints, Sparkles, Star, X } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/select";
 import { POIS, type Poi } from "./types";
 import { Button } from "@/components/ui/button";
+import type { FavoriteRoute } from "@/hooks/use-favorites";
 
 type Props = {
   origin: Poi;
@@ -19,6 +20,11 @@ type Props = {
   duration: number; // seconds
   loading: boolean;
   progress: number; // 0..1 for the "calculation" bar
+  favorites: FavoriteRoute[];
+  isFavorite: boolean;
+  onToggleFavorite: () => void;
+  onSelectFavorite: (fav: FavoriteRoute) => void;
+  onRemoveFavorite: (id: string) => void;
 };
 
 export function ControlPanel({
@@ -31,6 +37,11 @@ export function ControlPanel({
   duration,
   loading,
   progress,
+  favorites,
+  isFavorite,
+  onToggleFavorite,
+  onSelectFavorite,
+  onRemoveFavorite,
 }: Props) {
   const eta = formatDuration(duration);
   const dist = `${distance.toFixed(1)} m`;
