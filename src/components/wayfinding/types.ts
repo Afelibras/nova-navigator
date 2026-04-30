@@ -13,91 +13,210 @@ export type Poi = {
   id: string;
   name: string;
   type: PoiType;
-  x: number; // canvas coords (0-1000)
-  y: number; // canvas coords (0-700)
+  /** Floor number 1..6 */
+  floor: number;
+  /** Center coords on the canvas (0-1000 x 0-700) */
+  x: number;
+  y: number;
+  /** Optional rect dimensions for room blocks */
+  w?: number;
+  h?: number;
+  /** Short label drawn on the block */
+  short?: string;
 };
 
-// Salas baseadas na planta real do piso (referência: imagem enviada).
-// Coordenadas adaptadas para o viewBox 1000x700.
-export const POIS: Poi[] = [
-  // Fileira superior — série 1100
-  { id: "r-1100", name: "Sala 1100", type: "room", x: 110, y: 95 },
-  { id: "r-1101", name: "Sala 1101", type: "room", x: 175, y: 95 },
-  { id: "r-1102", name: "Sala 1102", type: "room", x: 240, y: 95 },
-  { id: "r-1103", name: "Sala 1103", type: "room", x: 305, y: 95 },
-  { id: "r-1106", name: "Sala 1106", type: "room", x: 400, y: 95 },
-  { id: "r-1107", name: "Sala 1107", type: "room", x: 565, y: 95 },
-  { id: "r-1109", name: "Sala 1109", type: "room", x: 670, y: 95 },
-  { id: "r-1110", name: "Sala 1110", type: "room", x: 735, y: 95 },
-  { id: "r-1217", name: "Sala 1217", type: "room", x: 800, y: 95 },
+export const FLOORS = [1, 2, 3, 4, 5, 6] as const;
+export type Floor = (typeof FLOORS)[number];
 
-  // Segunda fileira — série 1200
-  { id: "r-1200", name: "Sala 1200", type: "room", x: 110, y: 175 },
-  { id: "r-1203", name: "Sala 1203", type: "room", x: 220, y: 175 },
-  { id: "r-1205", name: "Sala 1205", type: "room", x: 320, y: 175 },
-  { id: "r-1207", name: "Sala 1207", type: "room", x: 420, y: 175 },
-  { id: "r-1211", name: "Sala 1211", type: "room", x: 600, y: 175 },
-  { id: "r-1212", name: "Sala 1212", type: "room", x: 660, y: 175 },
-  { id: "r-1214", name: "Sala 1214", type: "room", x: 730, y: 175 },
-  { id: "r-1216", name: "Sala 1216", type: "room", x: 800, y: 215 },
+// --- Geometry helpers shared by all floors ---
+// Building outline matches the photo: rectangular main block + east annex.
+export const BUILDING = {
+  main: { x: 80, y: 70, w: 760, h: 580 },
+  annexTop: { x: 840, y: 90, w: 110, h: 230 },
+  annexBottom: { x: 840, y: 360, w: 110, h: 240 },
+  // East decorative green pads
+  greenTop: { x: 870, y: 110, w: 70, h: 200 },
+  greenBottom: { x: 870, y: 380, w: 70, h: 200 },
+  // Inner green courtyards (the dark green strips inside)
+  innerGreens: [
+    { x: 290, y: 240, w: 270, h: 90 },
+    { x: 600, y: 240, w: 220, h: 90 },
+    { x: 290, y: 470, w: 280, h: 70 },
+    { x: 600, y: 470, w: 220, h: 70 },
+  ],
+  // Corridors (the dark grey strips)
+  corridorsH: [
+    { x: 80, y: 350, w: 760, h: 38 }, // main horizontal corridor
+    { x: 80, y: 595, w: 760, h: 28 }, // bottom corridor
+  ],
+  corridorsV: [
+    { x: 555, y: 70, w: 38, h: 580 }, // main vertical corridor (split between blocks)
+  ],
+};
 
-  // Centro — série 1400
-  { id: "r-1400", name: "Sala 1400", type: "room", x: 290, y: 360 },
-  { id: "r-1413", name: "Sala 1413", type: "room", x: 640, y: 320 },
-  { id: "r-1417", name: "Sala 1417", type: "room", x: 760, y: 365 },
-  { id: "r-1419", name: "Sala 1419", type: "room", x: 800, y: 545 },
+// Rooms common across floors (we vary the prefix per floor: 1 = floor 1 -> "11xx", etc.).
+// Coordinates are for the BLOCK CENTER + width/height. The numeric suffix matches the photo.
+type RoomTemplate = { suffix: string; x: number; y: number; w: number; h: number };
 
-  // Série 1500
-  { id: "r-1500", name: "Sala 1500", type: "room", x: 130, y: 430 },
-  { id: "r-1504", name: "Sala 1504", type: "room", x: 130, y: 545 },
-  { id: "r-1505", name: "Sala 1505", type: "room", x: 230, y: 545 },
-  { id: "r-1506", name: "Sala 1506", type: "room", x: 290, y: 545 },
-  { id: "r-1507", name: "Sala 1507", type: "room", x: 345, y: 545 },
-  { id: "r-1508", name: "Sala 1508", type: "room", x: 400, y: 545 },
-  { id: "r-1510", name: "Sala 1510", type: "room", x: 455, y: 545 },
-  { id: "r-1511", name: "Sala 1511", type: "room", x: 510, y: 545 },
-  { id: "r-1516", name: "Sala 1516", type: "room", x: 670, y: 545 },
-  { id: "r-1517", name: "Sala 1517", type: "room", x: 735, y: 545 },
-
-  // Série 1600
-  { id: "r-1604", name: "Sala 1604", type: "room", x: 285, y: 625 },
-  { id: "r-1605", name: "Sala 1605", type: "room", x: 345, y: 625 },
-  { id: "r-1606", name: "Sala 1606", type: "room", x: 400, y: 625 },
-  { id: "r-1607", name: "Sala 1607", type: "room", x: 455, y: 625 },
-
-  // Banheiros (referência da planta)
-  { id: "wc-1210", name: "Banheiros — Setor 1210", type: "restroom", x: 555, y: 175 },
-  { id: "wc-fem", name: "Banheiro Feminino — 1415", type: "restroom-female", x: 600, y: 365 },
-  { id: "wc-mas", name: "Banheiro Masculino — 1414", type: "restroom-male", x: 555, y: 365 },
-  { id: "wc-1512", name: "Banheiros — Setor 1512", type: "restroom", x: 600, y: 545 },
-
-  // Elevadores
-  { id: "elev-1", name: "Elevador Norte", type: "elevator", x: 510, y: 95 },
-  { id: "elev-2", name: "Elevador Central", type: "elevator", x: 510, y: 360 },
-  { id: "elev-3", name: "Elevador Sul", type: "elevator", x: 510, y: 625 },
-  { id: "elev-w", name: "Elevador Oeste", type: "elevator", x: 90, y: 470 },
-
-  // Escadas
-  { id: "stairs-n", name: "Escada Norte", type: "stairs", x: 700, y: 365 },
-  { id: "stairs-s", name: "Escada Sul — Emergência", type: "stairs", x: 250, y: 470 },
-
-  // Entrada / Saídas
-  { id: "entrance", name: "Entrada Principal", type: "entrance", x: 90, y: 660 },
-  { id: "exit-e", name: "Saída de Emergência Leste", type: "exit", x: 880, y: 470 },
-  { id: "exit-s", name: "Saída de Emergência Sul", type: "exit", x: 555, y: 670 },
+const TOP_ROW_LEFT: RoomTemplate[] = [
+  { suffix: "00", x: 115, y: 110, w: 50, h: 36 },
+  { suffix: "01", x: 170, y: 110, w: 50, h: 36 },
+  { suffix: "02", x: 225, y: 110, w: 50, h: 36 },
+  { suffix: "03", x: 280, y: 110, w: 50, h: 36 },
+  { suffix: "04", x: 322, y: 110, w: 28, h: 36 },
+  { suffix: "05", x: 352, y: 110, w: 28, h: 36 },
+  { suffix: "06", x: 415, y: 110, w: 95, h: 36 },
 ];
 
-export function findPoi(id: string) {
-  return POIS.find((p) => p.id === id)!;
+const TOP_ROW_RIGHT: RoomTemplate[] = [
+  { suffix: "07", x: 612, y: 110, w: 48, h: 36 },
+  { suffix: "08", x: 662, y: 110, w: 38, h: 36 },
+  { suffix: "09", x: 705, y: 110, w: 48, h: 36 },
+  { suffix: "10", x: 760, y: 110, w: 48, h: 36 },
+  { suffix: "17", x: 815, y: 110, w: 38, h: 36 },
+];
+
+const SECOND_ROW_LEFT: RoomTemplate[] = [
+  { suffix: "00", x: 110, y: 200, w: 40, h: 70, /* 1200 narrow column */ },
+  { suffix: "03", x: 195, y: 195, w: 50, h: 50 },
+  { suffix: "04", x: 250, y: 195, w: 50, h: 50 },
+  { suffix: "05", x: 305, y: 195, w: 50, h: 50 },
+  { suffix: "06", x: 360, y: 195, w: 50, h: 50 },
+  { suffix: "07", x: 440, y: 195, w: 110, h: 50 },
+];
+
+const SECOND_ROW_RIGHT: RoomTemplate[] = [
+  { suffix: "11", x: 615, y: 195, w: 50, h: 50 },
+  { suffix: "12", x: 670, y: 195, w: 50, h: 50 },
+  { suffix: "14", x: 740, y: 195, w: 50, h: 50 },
+  { suffix: "16", x: 815, y: 240, w: 38, h: 110 },
+];
+
+const MID_ROW: RoomTemplate[] = [
+  { suffix: "00", x: 290, y: 415, w: 130, h: 56 }, // 1400
+  { suffix: "13", x: 700, y: 405, w: 110, h: 70 }, // 1413
+  { suffix: "17", x: 760, y: 470, w: 100, h: 60 }, // 1417
+  { suffix: "19", x: 820, y: 575, w: 50, h: 60 }, // 1419 (south-east)
+];
+
+const FIFTH_ROW_LEFT: RoomTemplate[] = [
+  { suffix: "00", x: 110, y: 460, w: 38, h: 70 }, // 1500 narrow
+  { suffix: "04", x: 110, y: 575, w: 30, h: 56 }, // 1504
+  { suffix: "05", x: 175, y: 575, w: 60, h: 38 },
+  { suffix: "06", x: 240, y: 575, w: 50, h: 38 },
+  { suffix: "07", x: 295, y: 575, w: 50, h: 38 },
+  { suffix: "08", x: 350, y: 575, w: 50, h: 38 },
+  { suffix: "10", x: 405, y: 575, w: 50, h: 38 },
+  { suffix: "11", x: 460, y: 575, w: 50, h: 38 },
+];
+
+const FIFTH_ROW_RIGHT: RoomTemplate[] = [
+  { suffix: "12", x: 615, y: 575, w: 30, h: 38 },
+  { suffix: "16", x: 695, y: 575, w: 60, h: 38 },
+  { suffix: "17", x: 760, y: 575, w: 50, h: 38 },
+];
+
+const SOUTH_ROW: RoomTemplate[] = [
+  { suffix: "04", x: 380, y: 640, w: 60, h: 32 },
+  { suffix: "05", x: 445, y: 640, w: 50, h: 32 },
+  { suffix: "06", x: 500, y: 640, w: 50, h: 32 },
+  { suffix: "07", x: 555, y: 640, w: 50, h: 32 },
+];
+
+function makeFloor(floor: number): Poi[] {
+  // Floor numbering: floor 1 => "1Xxx", floor 2 => "2Xxx", etc.
+  const f = floor;
+  const mk = (prefix: string) => (r: RoomTemplate): Poi => {
+    const num = `${f}${prefix}${r.suffix}`;
+    return {
+      id: `r-${num}-f${f}`,
+      name: `Sala ${num}`,
+      short: num,
+      type: "room",
+      floor: f,
+      x: r.x,
+      y: r.y,
+      w: r.w,
+      h: r.h,
+    };
+  };
+
+  const rooms: Poi[] = [
+    ...TOP_ROW_LEFT.map(mk("1")),
+    ...TOP_ROW_RIGHT.map(mk("1")),
+    ...SECOND_ROW_LEFT.map(mk("2")),
+    ...SECOND_ROW_RIGHT.map(mk("2")),
+    ...MID_ROW.map(mk("4")),
+    ...FIFTH_ROW_LEFT.map(mk("5")),
+    ...FIFTH_ROW_RIGHT.map(mk("5")),
+    ...SOUTH_ROW.map(mk("6")),
+  ];
+
+  // Shared infrastructure on every floor — same coordinates, distinct ids.
+  const infra: Poi[] = [
+    // Elevators (brown columns in the photo)
+    { id: `elev-n-f${f}`, name: "Elevador Norte", type: "elevator", floor: f, x: 555, y: 200, w: 30, h: 60 },
+    { id: `elev-s-f${f}`, name: "Elevador Sul", type: "elevator", floor: f, x: 555, y: 720 - 100, w: 30, h: 50 },
+    { id: `elev-w-f${f}`, name: "Elevador Oeste", type: "elevator", floor: f, x: 95, y: 405, w: 24, h: 40 },
+
+    // Stairs (the small staircase shape near 1417)
+    { id: `stairs-e-f${f}`, name: "Escada Leste", type: "stairs", floor: f, x: 700, y: 470, w: 28, h: 40 },
+    { id: `stairs-s-f${f}`, name: "Escada Sul — Emergência", type: "stairs", floor: f, x: 230, y: 700 - 60, w: 26, h: 36 },
+
+    // Restrooms
+    { id: `wc-male-n-f${f}`, name: "Banheiro Masculino — Norte", type: "restroom-male", floor: f, x: 525, y: 200, w: 22, h: 40 },
+    { id: `wc-fem-c-f${f}`, name: "Banheiro Feminino — Central", type: "restroom-female", floor: f, x: 600, y: 470, w: 30, h: 40 },
+    { id: `wc-fem-s-f${f}`, name: "Banheiro Feminino — Sul", type: "restroom-female", floor: f, x: 660, y: 575, w: 28, h: 38 },
+    { id: `wc-male-w-f${f}`, name: "Banheiro Masculino — Oeste", type: "restroom-male", floor: f, x: 113, y: 380, w: 18, h: 24 },
+  ];
+
+  // Floor 1 also has the main entrance + emergency exit
+  if (f === 1) {
+    infra.push(
+      { id: `entrance-f1`, name: "Entrada Principal", type: "entrance", floor: 1, x: 95, y: 660, w: 24, h: 30 },
+      { id: `exit-e-f1`, name: "Saída Leste", type: "exit", floor: 1, x: 870, y: 470, w: 24, h: 30 },
+      { id: `exit-s-f1`, name: "Saída Sul", type: "exit", floor: 1, x: 555, y: 685, w: 28, h: 14 },
+      { id: `cafe-f1`, name: "Café & Lounge", type: "cafe", floor: 1, x: 415, y: 470, w: 60, h: 60 },
+    );
+  }
+
+  return rooms.concat(infra);
 }
 
-// Simple Manhattan-ish corridor route between two points using a midpoint.
+export const POIS_BY_FLOOR: Record<number, Poi[]> = Object.fromEntries(
+  FLOORS.map((f) => [f, makeFloor(f)]),
+);
+
+export const ALL_POIS: Poi[] = FLOORS.flatMap((f) => POIS_BY_FLOOR[f]);
+
+// Backwards-compat export (some components imported `POIS`).
+export const POIS = ALL_POIS;
+
+export function findPoi(id: string): Poi {
+  return ALL_POIS.find((p) => p.id === id)!;
+}
+
+export function poisOnFloor(floor: number): Poi[] {
+  return POIS_BY_FLOOR[floor] ?? [];
+}
+
+export function nearestElevator(p: Poi): Poi {
+  const sameFloor = poisOnFloor(p.floor).filter((q) => q.type === "elevator");
+  return sameFloor
+    .slice()
+    .sort((a, b) => Math.hypot(a.x - p.x, a.y - p.y) - Math.hypot(b.x - p.x, b.y - p.y))[0];
+}
+
+// Manhattan-ish corridor route between two points using the central corridors.
+// Routes always pass through the main horizontal/vertical corridor for realism.
 export function buildRoute(a: Poi, b: Poi): { x: number; y: number }[] {
-  const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+  const corridorY = 369; // center of horizontal corridor
+  const corridorX = 574; // center of vertical corridor
   return [
     { x: a.x, y: a.y },
-    { x: a.x, y: mid.y },
-    { x: b.x, y: mid.y },
+    { x: a.x, y: corridorY },
+    { x: corridorX, y: corridorY },
+    { x: b.x, y: corridorY },
     { x: b.x, y: b.y },
   ];
 }
@@ -107,12 +226,65 @@ export function routeLength(points: { x: number; y: number }[]): number {
   for (let i = 1; i < points.length; i++) {
     len += Math.hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y);
   }
-  // 1 unit ≈ 0.12m for realistic indoor scale
-  return len * 0.12;
+  return len * 0.12; // unit -> meters
+}
+
+export type RoutePlan = {
+  segments: {
+    floor: number;
+    points: { x: number; y: number }[];
+    from: Poi;
+    to: Poi;
+  }[];
+  /** Meters total */
+  distance: number;
+  /** Seconds total */
+  duration: number;
+  /** Floor change penalty seconds (waiting for elevator) */
+  floorChange: boolean;
+};
+
+export function planRoute(origin: Poi, destination: Poi): RoutePlan {
+  if (origin.floor === destination.floor) {
+    const pts = buildRoute(origin, destination);
+    const d = routeLength(pts);
+    return {
+      segments: [{ floor: origin.floor, points: pts, from: origin, to: destination }],
+      distance: d,
+      duration: d / 1.3,
+      floorChange: false,
+    };
+  }
+
+  // Multi-floor: walk to nearest elevator on origin floor, "ride" elevator,
+  // then walk from the matching elevator on destination floor to the goal.
+  const elevA = nearestElevator(origin);
+  // Match by id prefix (without floor suffix) so user lands on same shaft.
+  const shaft = elevA.id.replace(/-f\d+$/, "");
+  const elevB =
+    poisOnFloor(destination.floor).find((p) => p.id.startsWith(shaft)) ??
+    nearestElevator(destination);
+
+  const seg1 = buildRoute(origin, elevA);
+  const seg2 = buildRoute(elevB, destination);
+  const d1 = routeLength(seg1);
+  const d2 = routeLength(seg2);
+  const elevatorWait = 25; // seconds
+  const verticalSeconds = Math.abs(origin.floor - destination.floor) * 8;
+
+  return {
+    segments: [
+      { floor: origin.floor, points: seg1, from: origin, to: elevA },
+      { floor: destination.floor, points: seg2, from: elevB, to: destination },
+    ],
+    distance: d1 + d2,
+    duration: d1 / 1.3 + d2 / 1.3 + elevatorWait + verticalSeconds,
+    floorChange: true,
+  };
 }
 
 export function nearestPoi(p: Poi, exclude?: string): Poi {
-  return [...POIS]
-    .filter((x) => x.id !== p.id && x.id !== exclude)
+  return poisOnFloor(p.floor)
+    .filter((x) => x.id !== p.id && x.id !== exclude && x.type === "room")
     .sort((a, b) => Math.hypot(a.x - p.x, a.y - p.y) - Math.hypot(b.x - p.x, b.y - p.y))[0];
 }
