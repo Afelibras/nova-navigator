@@ -5,6 +5,7 @@ import { MapCanvas } from "@/components/wayfinding/MapCanvas";
 import { BottomSheet } from "@/components/wayfinding/BottomSheet";
 import { ReferenceBanner } from "@/components/wayfinding/ReferenceBanner";
 import { POIS, buildRoute, findPoi, nearestPoi, routeLength } from "@/components/wayfinding/types";
+import { useFavorites, type FavoriteRoute } from "@/hooks/use-favorites";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -25,6 +26,7 @@ function Index() {
   const [destinationId, setDestinationId] = useState("r-1413");
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(1);
+  const { favorites, isFavorite, toggle, remove } = useFavorites();
 
   const origin = findPoi(originId);
   const destination = findPoi(destinationId);
@@ -60,6 +62,20 @@ function Index() {
   }
 
   const reference = nearestPoi(destination, origin.id).name;
+  const favorited = isFavorite(originId, destinationId);
+
+  function onToggleFavorite() {
+    toggle({
+      originId,
+      destinationId,
+      label: `${origin.name} → ${destination.name}`,
+    });
+  }
+
+  function onSelectFavorite(f: FavoriteRoute) {
+    setOriginId(f.originId);
+    setDestinationId(f.destinationId);
+  }
 
   const panel = (
     <ControlPanel
@@ -72,6 +88,11 @@ function Index() {
       duration={duration}
       loading={loading}
       progress={progress}
+      favorites={favorites}
+      isFavorite={favorited}
+      onToggleFavorite={onToggleFavorite}
+      onSelectFavorite={onSelectFavorite}
+      onRemoveFavorite={remove}
     />
   );
 
