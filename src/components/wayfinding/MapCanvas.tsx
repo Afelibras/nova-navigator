@@ -101,10 +101,32 @@ export function MapCanvas({ origin, destination, pois, loading }: Props) {
             <rect x="80" y="380" width="380" height="240" rx="8" />
             <rect x="540" y="380" width="380" height="240" rx="8" />
           </g>
-          {/* Corridors hint */}
-          <g stroke="oklch(1 0 0 / 0.06)" strokeWidth="22" strokeLinecap="round">
-            <line x1="500" y1="60" x2="500" y2="640" />
-            <line x1="60" y1="350" x2="940" y2="350" />
+
+          {/* Corridors — base */}
+          <g>
+            {/* Horizontal corridors */}
+            <rect x="60" y="120" width="880" height="22" rx="4" fill="oklch(1 0 0 / 0.05)" />
+            <rect x="60" y="340" width="880" height="44" rx="6" fill="oklch(1 0 0 / 0.07)" />
+            <rect x="60" y="570" width="880" height="22" rx="4" fill="oklch(1 0 0 / 0.05)" />
+            {/* Vertical corridors */}
+            <rect x="490" y="60" width="44" height="600" rx="6" fill="oklch(1 0 0 / 0.07)" />
+            <rect x="60" y="60" width="22" height="600" rx="4" fill="oklch(1 0 0 / 0.04)" />
+          </g>
+          {/* Corridor center dashed guide lines */}
+          <g
+            stroke="oklch(0.78 0.18 250 / 0.25)"
+            strokeWidth="1"
+            strokeDasharray="6 8"
+            fill="none"
+          >
+            <line x1="60" y1="362" x2="940" y2="362" />
+            <line x1="512" y1="60" x2="512" y2="660" />
+          </g>
+
+          {/* Corridor labels */}
+          <g fontFamily="Inter, sans-serif" fontSize="9" fill="oklch(1 0 0 / 0.35)" fontWeight={600} letterSpacing="2">
+            <text x="70" y="357" textAnchor="start">CORREDOR PRINCIPAL</text>
+            <text x="520" y="75" textAnchor="start">EIXO N–S</text>
           </g>
 
           {/* POIs */}
@@ -112,28 +134,7 @@ export function MapCanvas({ origin, destination, pois, loading }: Props) {
             const isOrigin = p.id === origin.id;
             const isDest = p.id === destination.id;
             if (isOrigin || isDest) return null;
-            return (
-              <g key={p.id}>
-                <circle
-                  cx={p.x}
-                  cy={p.y}
-                  r={6}
-                  fill="oklch(1 0 0 / 0.35)"
-                  stroke="oklch(1 0 0 / 0.5)"
-                  strokeWidth="1"
-                />
-                <text
-                  x={p.x + 12}
-                  y={p.y + 4}
-                  fontSize="11"
-                  fill="oklch(1 0 0 / 0.55)"
-                  fontFamily="Inter, sans-serif"
-                  fontWeight={500}
-                >
-                  {p.name}
-                </text>
-              </g>
-            );
+            return <PoiMarker key={p.id} poi={p} />;
           })}
 
           {/* Route */}
@@ -306,3 +307,124 @@ function SonarOverlay({
     </div>
   );
 }
+
+const MARKER_STYLES: Record<Poi["type"], { color: string; halo: number }> = {
+  elevator: { color: "oklch(0.55 0.18 255)", halo: 18 },
+  stairs: { color: "oklch(0.62 0.16 280)", halo: 16 },
+  room: { color: "oklch(0.42 0.06 260)", halo: 12 },
+  entrance: { color: "oklch(0.62 0.18 165)", halo: 20 },
+  exit: { color: "oklch(0.60 0.22 30)", halo: 22 },
+  restroom: { color: "oklch(0.50 0.10 220)", halo: 16 },
+  "restroom-female": { color: "oklch(0.55 0.18 330)", halo: 16 },
+  "restroom-male": { color: "oklch(0.50 0.15 240)", halo: 16 },
+  cafe: { color: "oklch(0.60 0.16 60)", halo: 14 },
+};
+
+function PoiMarker({ poi }: { poi: Poi }) {
+  const cfg = MARKER_STYLES[poi.type];
+  const showLabel = poi.type === "room" || poi.type === "entrance" || poi.type === "exit";
+  return (
+    <g>
+      <circle cx={poi.x} cy={poi.y} r={cfg.halo} fill={cfg.color} opacity="0.18" />
+      <rect
+        x={poi.x - 11}
+        y={poi.y - 11}
+        width={22}
+        height={22}
+        rx={6}
+        fill={cfg.color}
+        opacity="0.95"
+        stroke="oklch(1 0 0 / 0.5)"
+        strokeWidth="1"
+      />
+      <g
+        transform={`translate(${poi.x}, ${poi.y})`}
+        fill="none"
+        stroke="oklch(0.99 0 0)"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <PoiGlyph type={poi.type} />
+      </g>
+      {showLabel && (
+        <text
+          x={poi.x + 16}
+          y={poi.y + 4}
+          fontSize="10"
+          fill="oklch(1 0 0 / 0.7)"
+          fontFamily="Inter, sans-serif"
+          fontWeight={600}
+        >
+          {poi.name}
+        </text>
+      )}
+    </g>
+  );
+}
+
+function PoiGlyph({ type }: { type: Poi["type"] }) {
+  switch (type) {
+    case "elevator":
+      return (
+        <>
+          <path d="M -3 -4 L 0 -7 L 3 -4" />
+          <path d="M -3 4 L 0 7 L 3 4" />
+          <line x1="0" y1="-7" x2="0" y2="-1" />
+          <line x1="0" y1="1" x2="0" y2="7" />
+        </>
+      );
+    case "stairs":
+      return <path d="M -6 5 L -2 5 L -2 1 L 2 1 L 2 -3 L 6 -3 L 6 -7" />;
+    case "entrance":
+      return (
+        <>
+          <path d="M -5 6 L -5 -6 L 5 -6 L 5 6" />
+          <path d="M -2 0 L 5 0" />
+          <path d="M 2 -3 L 5 0 L 2 3" />
+        </>
+      );
+    case "exit":
+      return (
+        <>
+          <path d="M -5 -6 L -5 6 L 1 6" />
+          <path d="M -1 0 L 6 0" />
+          <path d="M 3 -3 L 6 0 L 3 3" />
+        </>
+      );
+    case "restroom-female":
+      return (
+        <>
+          <circle cx="0" cy="-4" r="2" />
+          <path d="M -3 4 L 0 -2 L 3 4 Z" />
+        </>
+      );
+    case "restroom-male":
+      return (
+        <>
+          <circle cx="0" cy="-4" r="2" />
+          <line x1="0" y1="-2" x2="0" y2="4" />
+          <line x1="-3" y1="0" x2="3" y2="0" />
+        </>
+      );
+    case "restroom":
+      return (
+        <>
+          <circle cx="-3" cy="-4" r="1.6" />
+          <circle cx="3" cy="-4" r="1.6" />
+          <line x1="0" y1="-6" x2="0" y2="6" />
+        </>
+      );
+    case "cafe":
+      return (
+        <>
+          <path d="M -4 -2 L -4 4 Q -4 6 -2 6 L 2 6 Q 4 6 4 4 L 4 -2 Z" />
+          <path d="M 4 0 Q 7 0 7 3 Q 7 5 4 5" />
+        </>
+      );
+    case "room":
+    default:
+      return <circle cx="0" cy="0" r="2" fill="oklch(0.99 0 0)" stroke="none" />;
+  }
+}
+
